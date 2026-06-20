@@ -8,6 +8,8 @@ const connection = {
   host: config.bull.redis.host,
   port: config.bull.redis.port,
   password: config.bull.redis.password,
+  // Railway private network is IPv6-only; ioredis defaults to IPv4.
+  family: 0,
   // Fail fast when Redis is unavailable instead of buffering commands
   // forever — queue.add() callers wrap in try/catch and treat it as optional.
   enableOfflineQueue: false,

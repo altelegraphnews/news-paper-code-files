@@ -11,6 +11,9 @@ const getRedisConfig = () => {
     host: config.redis.host,
     port: config.redis.port,
     db: config.redis.db,
+    // Railway's private network is IPv6-only; ioredis defaults to IPv4.
+    // family: 0 lets Node resolve both A and AAAA records.
+    family: 0,
     retryStrategy: (times) => {
       const delay = Math.min(times * 100, 3000);
       logger.warn(`Redis retry attempt ${times}, waiting ${delay}ms`);
