@@ -1,0 +1,605 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   التلغراف — لوحة التحكم
+   "Golden Telegraph" — ink & parchment with gold-foil accents
+   ============================================================ */
+
+/* ─── RTL Base ─── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    direction: rtl;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-sans text-gray-900 antialiased;
+    direction: rtl;
+    background-color: var(--color-bg);
+    font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
+    position: relative;
+  }
+
+  /* Paper grain — the dashboard sits on textured stock, like the site */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+  }
+
+  .dark body::before {
+    opacity: 0.07;
+    mix-blend-mode: screen;
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+
+  .dark body {
+    @apply text-gray-100;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Amiri', Georgia, serif;
+    font-weight: 700;
+  }
+
+  /* Article content uses Amiri (matches the live site) */
+  .prose-arabic {
+    font-family: 'Amiri', Georgia, serif;
+    line-height: 2;
+    direction: rtl;
+  }
+
+  ::selection {
+    background-color: #b8923d;
+    color: #10151f;
+  }
+
+  :focus-visible {
+    outline: 2px solid #b8923d;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* ─── CSS Variables / Design Tokens ─── */
+:root {
+  --color-primary:       #b8923d;   /* gold foil */
+  --color-primary-dark:  #9c7630;
+  --color-ink:           #10151f;
+  --color-bg:            #f6f1e6;   /* parchment */
+  --color-surface:       #fffcf5;
+  --color-surface-2:     #efe8d8;
+  --color-border:        #e3dac6;
+  --color-text:          #1c2027;
+  --color-text-muted:    #7b8294;
+  --color-sidebar-bg:    #10151f;   /* midnight ink */
+  --color-sidebar-text:  #b3bac9;
+  --color-sidebar-hover: #1c2331;
+  --color-sidebar-active:#b8923d;
+  --gold-1: #8c6a23;
+  --gold-2: #e9cf7d;
+  --gold-3: #b8923d;
+  --gold-4: #f3e2a4;
+  --sidebar-width:       260px;
+  --topbar-height:       64px;
+  --radius:              0.375rem;
+  --shadow:              0 1px 2px rgba(16, 21, 31, 0.05), 0 4px 16px rgba(16, 21, 31, 0.06);
+  --shadow-md:           0 2px 4px rgba(16, 21, 31, 0.08), 0 8px 24px rgba(16, 21, 31, 0.1);
+  --shadow-lg:           0 2px 4px rgba(16, 21, 31, 0.08), 0 16px 40px rgba(16, 21, 31, 0.14);
+  --ease-out-soft:       cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark {
+  --color-bg:          #0c111a;
+  --color-surface:     #151c29;
+  --color-surface-2:   #1d2636;
+  --color-border:      #2a3447;
+  --color-text:        #ede7d9;
+  --color-text-muted:  #7b8294;
+  --color-sidebar-bg:  #0a0e16;
+}
+
+/* ─── Gold-foil shimmer text (masthead) ─── */
+.gold-foil {
+  background: linear-gradient(
+    105deg,
+    var(--gold-1) 0%,
+    var(--gold-2) 22%,
+    var(--gold-3) 45%,
+    var(--gold-4) 68%,
+    var(--gold-1) 100%
+  );
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: foil-sheen 7s linear infinite;
+}
+
+@keyframes foil-sheen {
+  0% { background-position: 0% center; }
+  100% { background-position: -250% center; }
+}
+
+/* ─── Morse-code divider — dash · dot · dash ─── */
+.morse-line {
+  height: 3px;
+  border-radius: 2px;
+  background-image: repeating-linear-gradient(
+    to left,
+    #b8923d 0 18px,
+    transparent 18px 27px,
+    #b8923d 27px 31px,
+    transparent 31px 40px
+  );
+  background-size: 40px 3px;
+  opacity: 0.7;
+}
+
+.morse-line--subtle {
+  opacity: 0.35;
+}
+
+.morse-line--animated {
+  animation: morse-transmit 18s linear infinite;
+}
+
+@keyframes morse-transmit {
+  0%   { background-position: 0 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* ─── Custom Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: #cfc5ab;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b8923d;
+}
+.dark ::-webkit-scrollbar-track  { background: #0c111a; }
+.dark ::-webkit-scrollbar-thumb  { background: #36405a; }
+
+/* ─── TipTap Editor Styles ─── */
+.ProseMirror {
+  direction: rtl;
+  text-align: right;
+  outline: none;
+  min-height: 400px;
+  padding: 1.25rem;
+  font-family: 'Amiri', Georgia, serif;
+  font-size: 1.125rem;
+  line-height: 2;
+  color: var(--color-text);
+}
+
+.ProseMirror p {
+  margin-bottom: 1em;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-family: 'Amiri', Georgia, serif;
+  color: var(--color-text);
+  border-right: 3px solid #b8923d;
+  padding-right: 0.75rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  font-family: 'Amiri', Georgia, serif;
+}
+
+.ProseMirror h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.4em;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-right: 1.5rem;
+  padding-left: 0;
+  margin-bottom: 1em;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25em;
+}
+
+.ProseMirror blockquote {
+  border: none;
+  position: relative;
+  padding: 1.5rem 2.25rem 1.25rem;
+  margin: 1.5rem 0;
+  background: linear-gradient(135deg, rgba(184, 146, 61, 0.08), rgba(184, 146, 61, 0.02));
+  border-radius: 2px;
+  color: var(--color-text);
+  text-align: center;
+}
+
+.ProseMirror blockquote::before {
+  content: '❝';
+  position: absolute;
+  top: 0.4rem;
+  right: 0.75rem;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: #b8923d;
+  opacity: 0.8;
+}
+
+.ProseMirror code {
+  background: var(--color-surface-2);
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+  font-size: 0.875em;
+  font-family: 'Courier New', monospace;
+  direction: ltr;
+  unicode-bidi: bidi-override;
+}
+
+.ProseMirror pre {
+  background: #10151f;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-bottom: 1em;
+  direction: ltr;
+}
+
+.ProseMirror pre code {
+  background: none;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.ProseMirror a {
+  color: #7d5b29;
+  text-decoration: underline;
+  text-decoration-color: rgba(184, 146, 61, 0.45);
+  text-underline-offset: 4px;
+}
+
+.dark .ProseMirror a {
+  color: #dcba6a;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.25rem;
+  margin: 1em 0;
+  box-shadow: var(--shadow);
+}
+
+/* Table styles */
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 1em;
+  overflow: hidden;
+}
+.ProseMirror table td,
+.ProseMirror table th {
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+}
+.ProseMirror table th {
+  background: #1c2331;
+  color: #fffcf5;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-weight: 600;
+}
+.ProseMirror table .selectedCell:after {
+  background: rgba(184, 146, 61, 0.12);
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+.ProseMirror table .column-resize-handle {
+  background-color: #b8923d;
+  bottom: -2px;
+  left: -2px;
+  pointer-events: none;
+  position: absolute;
+  right: -2px;
+  top: 0;
+  width: 4px;
+}
+
+/* Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #7b8294;
+  content: attr(data-placeholder);
+  float: right;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Focus ring */
+.ProseMirror-focused {
+  outline: none;
+}
+
+/* Editor wrapper */
+.editor-wrapper {
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.dark .ProseMirror {
+  color: #ede7d9;
+}
+.dark .ProseMirror code {
+  background: #1d2636;
+}
+.dark .ProseMirror table td,
+.dark .ProseMirror table th {
+  border-color: #2a3447;
+}
+.dark .ProseMirror table th {
+  background: #1d2636;
+}
+
+/* ─── Utility Classes ─── */
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-ink-900 text-gray-50 hover:bg-ink-800 focus:ring-gold-500 border border-ink-900;
+  }
+  .btn-gold {
+    @apply btn bg-gold-500 text-ink-950 hover:bg-gold-400 focus:ring-gold-500 border border-gold-600 font-semibold;
+  }
+  .btn-secondary {
+    @apply btn bg-surface text-gray-600 border border-gray-200 hover:bg-gray-50 hover:border-gold-300 focus:ring-gold-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700;
+  }
+  .btn-danger {
+    @apply btn bg-red-50 text-red-700 hover:bg-red-100 focus:ring-red-500 dark:bg-red-900/20 dark:text-red-400;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gold-400 dark:text-gray-400 dark:hover:bg-gray-800;
+  }
+  .card {
+    @apply bg-surface dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700;
+    box-shadow: var(--shadow);
+  }
+  .input-base {
+    @apply w-full px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-surface dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-colors;
+    direction: rtl;
+    text-align: right;
+  }
+  .label-base {
+    @apply block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1;
+  }
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150 cursor-pointer;
+  }
+  .sidebar-item-active {
+    @apply bg-gold-500 text-ink-950;
+  }
+  .sidebar-item-inactive {
+    @apply text-gray-400 hover:bg-white/10 hover:text-gold-200;
+  }
+  .table-th {
+    @apply px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+  }
+  .table-td {
+    @apply px-4 py-3 text-sm text-gray-900 dark:text-gray-100;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium;
+  }
+}
+
+/* ─── Print Styles ─── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; color: black; }
+  body::before { display: none; }
+  .card { box-shadow: none; border: 1px solid #ccc; }
+}
+
+/* ─── Animations ─── */
+.fade-in {
+  animation: fadeIn 0.2s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Staggered page-load rise (mirrors the frontend .rise system) */
+.rise {
+  animation: rise-in 0.7s var(--ease-out-soft) both;
+}
+.rise-1 { animation-delay: 60ms; }
+.rise-2 { animation-delay: 140ms; }
+.rise-3 { animation-delay: 220ms; }
+.rise-4 { animation-delay: 300ms; }
+.rise-5 { animation-delay: 380ms; }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Route transition — applied to the page container on every navigation */
+.page-enter {
+  animation: page-enter 0.35s var(--ease-out-soft) both;
+}
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Modal entrance */
+.modal-enter {
+  animation: modal-in 0.25s var(--ease-out-soft) both;
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Lift on hover — cards & quick links */
+.hover-lift {
+  transition:
+    transform 0.25s var(--ease-out-soft),
+    box-shadow 0.25s var(--ease-out-soft),
+    border-color 0.25s var(--ease-out-soft);
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Gold sheen sweep across buttons */
+.btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.btn-sheen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: skewX(-20deg);
+  transition: left 600ms var(--ease-out-soft);
+}
+.btn-sheen:hover::after {
+  left: 130%;
+}
+
+/* Telegraph wire — hairline with a traveling golden signal */
+.wire {
+  position: relative;
+  height: 2px;
+  background: linear-gradient(
+    to left,
+    transparent,
+    var(--color-border) 12%,
+    var(--color-border) 88%,
+    transparent
+  );
+  overflow: hidden;
+}
+.wire::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 72px;
+  background: linear-gradient(to left, transparent, var(--gold-2), transparent);
+  animation: wire-pulse 3s ease-in-out infinite;
+}
+@keyframes wire-pulse {
+  0%   { right: -80px; opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { right: calc(100% + 8px); opacity: 0; }
+}
+
+/* Morse loader — dot · dash · dot, blinking like a telegraph key */
+.morse-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.morse-loader span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--gold-3);
+  animation: morse-blink 1.2s ease-in-out infinite;
+}
+.morse-loader span:nth-child(2) {
+  width: 1.5rem;
+  border-radius: 4px;
+  animation-delay: 0.2s;
+}
+.morse-loader span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes morse-blink {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .page-enter,
+  .modal-enter,
+  .morse-line--animated,
+  .gold-foil,
+  .wire::after,
+  .morse-loader span {
+    animation: none !important;
+  }
+}
+
+/* ─── DnD ghost ─── */
+.dnd-ghost {
+  opacity: 0.5;
+}
+.dnd-overlay {
+  box-shadow: 0 20px 40px rgba(16, 21, 31, 0.25);
+  border-radius: 0.375rem;
+  cursor: grabbing;
+}
+
+/* ─── React Datepicker RTL override ─── */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+.react-datepicker {
+  direction: rtl;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+.react-datepicker__day-name,
+.react-datepicker__day,
+.react-datepicker__time-name {
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
