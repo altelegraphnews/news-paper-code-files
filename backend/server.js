@@ -170,3 +170,4 @@ const start = async () => {
 start();
 
 module.exports = app; // for tests
+// Railway GitHub auto-deploy: pushing backend/** to main redeploys this service.
