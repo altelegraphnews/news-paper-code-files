@@ -64,15 +64,14 @@ export default function Navbar({ categories = [] }: { categories?: Category[] })
             className="flex-shrink-0 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-ink rounded"
             aria-label="التلغراف - الصفحة الرئيسية"
           >
-            <span className="gold-foil text-3xl font-display leading-none pb-1">
-              التلغراف
-            </span>
-            <span className="hidden sm:flex flex-col items-start gap-1" aria-hidden="true">
-              <span className="text-[0.6rem] font-arabic font-light tracking-wide text-white/50">
-                أدب · فكر · ثقافة
-              </span>
-              <span className="morse-line morse-line--subtle w-20 !h-[2px]" />
-            </span>
+            <img
+              src="/logo-light.png"
+              alt="التلغراف"
+              width={229}
+              height={100}
+              className="h-10 sm:h-11 w-auto select-none"
+              draggable={false}
+            />
           </Link>
 
           {/* Desktop Navigation */}
