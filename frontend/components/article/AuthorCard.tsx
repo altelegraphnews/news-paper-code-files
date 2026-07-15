@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Author } from '@/lib/types';
+import { avatarUrl } from '@/lib/utils/avatar';
 
 interface AuthorCardProps {
   author: Author;
@@ -14,9 +15,9 @@ export default function AuthorCard({ author, publishedAt, readingTimeMin, classN
     <div className={`flex items-center gap-4 ${className}`}>
       <Link href={`/author/${author.authorSlug || author._id}`}>
         <div className="relative w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex-shrink-0">
-          {author.avatar ? (
+          {avatarUrl(author.avatar) ? (
             <Image
-              src={author.avatar}
+              src={avatarUrl(author.avatar)!}
               alt={author.name}
               fill
               className="object-cover"

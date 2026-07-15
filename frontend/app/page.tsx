@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { Article } from '@/lib/types';
 
 import { API_URL } from '@/lib/api';
+import { avatarUrl } from '@/lib/utils/avatar';
 
 export const metadata: Metadata = {
   title: 'التلغراف - مجلة أدبية وثقافية',
@@ -170,9 +171,9 @@ function OpinionSection({ articles }: { articles: Article[] }) {
                 </h3>
 
                 <div className="flex items-center justify-center gap-3">
-                  {article.author?.avatar ? (
+                  {avatarUrl(article.author?.avatar) ? (
                     <span className="relative w-9 h-9 rounded-full overflow-hidden ring-1 ring-accent/40">
-                      <Image src={article.author.avatar} alt={article.author.name} fill className="object-cover" sizes="36px" />
+                      <Image src={avatarUrl(article.author?.avatar)!} alt={article.author.name} fill className="object-cover" sizes="36px" />
                     </span>
                   ) : (
                     <span className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center ring-1 ring-accent/40">

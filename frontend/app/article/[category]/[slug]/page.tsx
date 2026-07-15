@@ -11,6 +11,7 @@ import ReadingProgress from '@/components/ui/ReadingProgress';
 import ViewTracker from '@/components/article/ViewTracker';
 import { Article } from '@/lib/types';
 import { formatArabicDateTime } from '@/lib/utils/dateUtils';
+import { avatarUrl } from '@/lib/utils/avatar';
 
 import { API_URL } from '@/lib/api';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://altilgraf.com';
@@ -256,9 +257,9 @@ export default async function ArticlePage({ params }: Props) {
           <div className="relative rounded-sm border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6 pt-8 mb-8">
             <span className="absolute -top-px right-6 morse-line w-20" aria-hidden="true" />
             <div className="flex items-start gap-4">
-              {article.author.avatar ? (
+              {avatarUrl(article.author.avatar) ? (
                 <div className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-accent/40">
-                  <Image src={article.author.avatar} alt={article.author.name} fill className="object-cover" sizes="64px" />
+                  <Image src={avatarUrl(article.author.avatar)!} alt={article.author.name} fill className="object-cover" sizes="64px" />
                 </div>
               ) : (
                 <div className="w-16 h-16 rounded-full bg-accent/15 ring-1 ring-accent/40 flex items-center justify-center flex-shrink-0">

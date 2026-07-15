@@ -8,6 +8,7 @@ import Reveal from '@/components/ui/Reveal';
 import { Article } from '@/lib/types';
 
 import { API_URL } from '@/lib/api';
+import { avatarUrl } from '@/lib/utils/avatar';
 
 interface Props {
   params: { slug: string };
@@ -105,9 +106,9 @@ export default async function AuthorPage({ params, searchParams }: Props) {
         />
 
         <div className="relative flex items-center gap-6 flex-wrap">
-          {author?.avatar ? (
+          {avatarUrl(author?.avatar) ? (
             <div className="relative w-24 h-24 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-accent/50 ring-offset-2 ring-offset-[color:var(--color-surface)]">
-              <Image src={author.avatar} alt={name} fill className="object-cover" sizes="96px" />
+              <Image src={avatarUrl(author?.avatar)!} alt={name} fill className="object-cover" sizes="96px" />
             </div>
           ) : (
             <div className="w-24 h-24 rounded-full bg-accent/15 ring-2 ring-accent/50 ring-offset-2 ring-offset-[color:var(--color-surface)] flex items-center justify-center flex-shrink-0">

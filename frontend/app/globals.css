@@ -580,6 +580,30 @@ a {
   margin-top: 0.625rem;
 }
 
+/* Multi-image gallery inside article content (e.g. an author's book covers,
+   photos from an interview). Full images, no crop, laid out as a responsive
+   grid so a set of related pictures reads as one shelf/strip. */
+.prose-arabic .content-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  margin: 2.25rem 0;
+  align-items: start;
+}
+.prose-arabic .content-gallery figure {
+  margin: 0;
+}
+.prose-arabic .content-gallery img {
+  margin: 0;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: var(--shadow-card);
+}
+.prose-arabic .content-gallery figcaption {
+  margin-top: 0.45rem;
+}
+
 .prose-arabic table {
   width: 100%;
   border-collapse: collapse;
