@@ -1,5 +1,6 @@
 'use strict';
 
+const mongoose = require('mongoose');
 const Article = require('../models/Article');
 const Category = require('../models/Category');
 const Ticker = require('../models/Ticker');
@@ -9,44 +10,71 @@ const logger = require('../utils/logger');
 const CACHE_KEY = 'homepage:data';
 const CACHE_TTL = 60; // 60 seconds
 
+// Admin homepage overrides live in the `siteconfigs` collection (set via the
+// admin PUT /homepage/hero and /homepage/featured routes).
+const getSiteConfig = async (key) => {
+  try {
+    const doc = await mongoose.connection.db.collection('siteconfigs').findOne({ key });
+    return doc ? doc.value : null;
+  } catch {
+    return null;
+  }
+};
+
+// Shared card projection for homepage article queries.
+const withCardFields = (query) =>
+  query
+    .populate('category', 'name slug color')
+    .populate('author', 'name avatar')
+    .select('-content -revisions')
+    .lean();
+
 /**
  * Build homepage data object
  */
 const buildHomepageData = async () => {
-  const [
-    heroArticle,
-    featuredArticles,
-    latestArticles,
-    breakingArticles,
-    tickers,
-    categories,
-  ] = await Promise.all([
-    // Hero: most recent featured
-    Article.findOne({ status: 'published', isFeatured: true, isDeleted: { $ne: true } })
-      .sort('-publishedAt')
-      .populate('category', 'name slug color')
-      .populate('author', 'name avatar')
-      .select('-content -revisions')
-      .lean(),
+  // Admin-configured hero + featured overrides (fall back to auto-selection).
+  const [heroIdCfg, featuredIdsCfg] = await Promise.all([
+    getSiteConfig('homepage:hero'),
+    getSiteConfig('homepage:featured'),
+  ]);
 
-    // Secondary featured (up to 4, excluding hero)
-    Article.find({ status: 'published', isFeatured: true, isDeleted: { $ne: true } })
-      .sort('-publishedAt')
-      .skip(1)
-      .limit(4)
-      .populate('category', 'name slug color')
-      .populate('author', 'name avatar')
-      .select('-content -revisions')
-      .lean(),
+  // Hero: use the admin's pick if it is still published, otherwise the most
+  // recent featured article.
+  let heroArticle = null;
+  if (heroIdCfg) {
+    heroArticle = await withCardFields(
+      Article.findOne({ _id: heroIdCfg, status: 'published', isDeleted: { $ne: true } })
+    );
+  }
+  if (!heroArticle) {
+    heroArticle = await withCardFields(
+      Article.findOne({ status: 'published', isFeatured: true, isDeleted: { $ne: true } }).sort('-publishedAt')
+    );
+  }
 
+  // Secondary featured: use the admin's ordered list if set, else auto (most
+  // recent isFeatured). Never repeat the hero; cap at 4.
+  let featuredArticles = [];
+  if (Array.isArray(featuredIdsCfg) && featuredIdsCfg.length) {
+    const found = await withCardFields(
+      Article.find({ _id: { $in: featuredIdsCfg }, status: 'published', isDeleted: { $ne: true } })
+    );
+    const byId = new Map(found.map((a) => [String(a._id), a]));
+    featuredArticles = featuredIdsCfg.map((id) => byId.get(String(id))).filter(Boolean);
+  } else {
+    featuredArticles = await withCardFields(
+      Article.find({ status: 'published', isFeatured: true, isDeleted: { $ne: true } }).sort('-publishedAt').limit(6)
+    );
+  }
+  if (heroArticle) {
+    featuredArticles = featuredArticles.filter((a) => String(a._id) !== String(heroArticle._id));
+  }
+  featuredArticles = featuredArticles.slice(0, 4);
+
+  const [latestArticles, breakingArticles, tickers, categories] = await Promise.all([
     // Latest articles
-    Article.find({ status: 'published', isDeleted: { $ne: true } })
-      .sort('-publishedAt')
-      .limit(12)
-      .populate('category', 'name slug color')
-      .populate('author', 'name avatar')
-      .select('-content -revisions')
-      .lean(),
+    withCardFields(Article.find({ status: 'published', isDeleted: { $ne: true } }).sort('-publishedAt').limit(12)),
 
     // Breaking news
     Article.find({ status: 'published', isBreaking: true, isDeleted: { $ne: true } })
