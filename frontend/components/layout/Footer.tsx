@@ -1,8 +1,14 @@
 import Link from 'next/link';
 import { Facebook, Twitter, Youtube, Instagram, Mail, MapPin, Rss } from 'lucide-react';
 import NewsletterForm from '@/components/ui/NewsletterForm';
-import { fetchNavCategories } from '@/lib/api';
+import { API_URL } from '@/lib/api';
 import { buildNavLinks, STATIC_NAV_LINKS } from '@/lib/nav';
+
+async function getNavCategoriesCached() {
+  const res = await fetch(`${API_URL}/categories/nav`, { next: { revalidate: 600 } });
+  if (!res.ok) throw new Error('nav fetch failed');
+  return (await res.json()).data || [];
+}
 
 const footerLinks = [
   { label: 'عن التلغراف', href: '/about' },
@@ -24,7 +30,7 @@ export default async function Footer() {
   // Fall back to just the static pages if the backend is unreachable.
   let footerCategories = STATIC_NAV_LINKS;
   try {
-    footerCategories = buildNavLinks(await fetchNavCategories());
+    footerCategories = buildNavLinks(await getNavCategoriesCached());
   } catch {
     /* backend unavailable — show static links only */
   }

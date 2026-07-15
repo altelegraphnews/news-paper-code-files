@@ -6,8 +6,22 @@ import Navbar from '@/components/layout/Navbar';
 import NewsTicker from '@/components/layout/NewsTicker';
 import Footer from '@/components/layout/Footer';
 import ScrollToTop from '@/components/ui/ScrollToTop';
-import { fetchNavCategories } from '@/lib/api';
+import { API_URL } from '@/lib/api';
 import './globals.css';
+
+// Nav categories rarely change — fetch via the Next Data Cache (revalidate)
+// instead of an uncached axios call, so every page render reuses the cached
+// result instead of re-hitting the backend.
+async function getNavCategoriesCached() {
+  try {
+    const res = await fetch(`${API_URL}/categories/nav`, { next: { revalidate: 600 } });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch {
+    return [];
+  }
+}
 
 const amiri = Amiri({
   subsets: ['arabic', 'latin'],
@@ -122,7 +136,7 @@ export default async function RootLayout({
   // Fetch nav categories server-side so Navbar/MobileMenu render identical
   // markup on server and client (avoids hydration mismatch). Falls back to
   // static-only links if the backend is unreachable.
-  const navCategories = await fetchNavCategories().catch(() => []);
+  const navCategories = await getNavCategoriesCached();
 
   return (
     <html

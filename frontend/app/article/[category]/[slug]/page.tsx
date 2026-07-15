@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -15,6 +16,10 @@ import { avatarUrl } from '@/lib/utils/avatar';
 
 import { API_URL } from '@/lib/api';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://altilgraf.com';
+
+// ISR: cache each rendered article for 5 minutes so navigating to it (or back to
+// it) is served from cache instead of re-rendering + re-querying the backend.
+export const revalidate = 300;
 
 interface Props {
   params: { category: string; slug: string };
@@ -86,7 +91,6 @@ export default async function ArticlePage({ params }: Props) {
   const article = await getArticle(params.slug);
   if (!article) notFound();
 
-  const recommendations = await getRecommendations(article._id);
   const articleUrl = `${SITE_URL}/article/${params.category}/${params.slug}`;
 
   // JSON-LD structured data
@@ -287,10 +291,21 @@ export default async function ArticlePage({ params }: Props) {
         )}
       </article>
 
-      {/* Related articles */}
-      <div className="max-w-7xl mx-auto px-4">
-        {recommendations.length > 0 && <RelatedArticles articles={recommendations} />}
-      </div>
+      {/* Related articles — streamed after the article so it never blocks the
+          main render on the (slower) recommendations query. */}
+      <Suspense fallback={null}>
+        <RelatedArticlesSection articleId={article._id} />
+      </Suspense>
     </>
+  );
+}
+
+async function RelatedArticlesSection({ articleId }: { articleId: string }) {
+  const recommendations = await getRecommendations(articleId);
+  if (!recommendations.length) return null;
+  return (
+    <div className="max-w-7xl mx-auto px-4">
+      <RelatedArticles articles={recommendations} />
+    </div>
   );
 }
