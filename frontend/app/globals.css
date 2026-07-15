@@ -976,17 +976,13 @@ a {
   transform: scaleX(-1);
 }
 
-/* Smooth image loading */
+/* Smooth image loading — images are visible by default.
+   NOTE: the previous `img[loading] { opacity: 0 }` (paired with `img.loaded`)
+   hid every lazy-loaded <img> until JS added a `.loaded` class. next/image
+   never receives that class, so all card thumbnails loaded but stayed
+   permanently invisible (opacity 0). Keep the fade transition, but never hide. */
 img {
   transition: opacity 0.3s ease;
-}
-
-img[loading] {
-  opacity: 0;
-}
-
-img.loaded {
-  opacity: 1;
 }
 
 /* Article progress bar — fills from the right (RTL reading direction) */
