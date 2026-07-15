@@ -30,3 +30,7 @@ Thumbs.db
 .idea/
 coverage/
 **/.cache/
+
+# ───────── Stray / generated artifacts ─────────
+.railway-config-pull-*/
+backend/scripts/real-content/dry-run-output.html

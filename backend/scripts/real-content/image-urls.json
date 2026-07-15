@@ -1,0 +1,242 @@
+{
+  "shir-ajyal-hero": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151458/altilgraf/content/shir-ajyal-hero.jpg",
+    "publicId": "altilgraf/content/shir-ajyal-hero",
+    "width": 736,
+    "height": 920
+  },
+  "shir-masarrat-hero": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151460/altilgraf/content/shir-masarrat-hero.png",
+    "publicId": "altilgraf/content/shir-masarrat-hero",
+    "width": 1254,
+    "height": 1254
+  },
+  "shir-raseef-hero": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151461/altilgraf/content/shir-raseef-hero.jpg",
+    "publicId": "altilgraf/content/shir-raseef-hero",
+    "width": 928,
+    "height": 1200
+  },
+  "shir-ghawayat-hero": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151461/altilgraf/content/shir-ghawayat-hero.jpg",
+    "publicId": "altilgraf/content/shir-ghawayat-hero",
+    "width": 1200,
+    "height": 1377
+  },
+  "shir-qublat-hero": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151462/altilgraf/content/shir-qublat-hero.jpg",
+    "publicId": "altilgraf/content/shir-qublat-hero",
+    "width": 1080,
+    "height": 1311
+  },
+  "author-mahdi": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151463/altilgraf/content/author-mahdi.jpg",
+    "publicId": "altilgraf/content/author-mahdi",
+    "width": 1170,
+    "height": 2045
+  },
+  "author-jawad": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151464/altilgraf/content/author-jawad.jpg",
+    "publicId": "altilgraf/content/author-jawad",
+    "width": 1080,
+    "height": 1620
+  },
+  "author-walaa": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151465/altilgraf/content/author-walaa.jpg",
+    "publicId": "altilgraf/content/author-walaa",
+    "width": 984,
+    "height": 1690
+  },
+  "author-jabbar": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151465/altilgraf/content/author-jabbar.jpg",
+    "publicId": "altilgraf/content/author-jabbar",
+    "width": 720,
+    "height": 710
+  },
+  "author-shawqi": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151466/altilgraf/content/author-shawqi.jpg",
+    "publicId": "altilgraf/content/author-shawqi",
+    "width": 864,
+    "height": 864
+  },
+  "author-dawud": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151467/altilgraf/content/author-dawud.jpg",
+    "publicId": "altilgraf/content/author-dawud",
+    "width": 1138,
+    "height": 1280
+  },
+  "author-wilam": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151468/altilgraf/content/author-wilam.jpg",
+    "publicId": "altilgraf/content/author-wilam",
+    "width": 2048,
+    "height": 2048
+  },
+  "author-iyad": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151469/altilgraf/content/author-iyad.jpg",
+    "publicId": "altilgraf/content/author-iyad",
+    "width": 665,
+    "height": 665
+  },
+  "author-ismailabd": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151470/altilgraf/content/author-ismailabd.jpg",
+    "publicId": "altilgraf/content/author-ismailabd",
+    "width": 1500,
+    "height": 2000
+  },
+  "author-dina": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151471/altilgraf/content/author-dina.jpg",
+    "publicId": "altilgraf/content/author-dina",
+    "width": 666,
+    "height": 1066
+  },
+  "qiraat-mithaq-cover": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151472/altilgraf/content/qiraat-mithaq-cover.jpg",
+    "publicId": "altilgraf/content/qiraat-mithaq-cover",
+    "width": 387,
+    "height": 516
+  },
+  "qiraat-mithaq-haneen1": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151473/altilgraf/content/qiraat-mithaq-haneen1.jpg",
+    "publicId": "altilgraf/content/qiraat-mithaq-haneen1",
+    "width": 720,
+    "height": 728
+  },
+  "qiraat-mithaq-haneen2": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151473/altilgraf/content/qiraat-mithaq-haneen2.jpg",
+    "publicId": "altilgraf/content/qiraat-mithaq-haneen2",
+    "width": 1561,
+    "height": 2048
+  },
+  "author-qusay": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151474/altilgraf/content/author-qusay.jpg",
+    "publicId": "altilgraf/content/author-qusay",
+    "width": 424,
+    "height": 438
+  },
+  "qiraat-maarid-cover": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151475/altilgraf/content/qiraat-maarid-cover.jpg",
+    "publicId": "altilgraf/content/qiraat-maarid-cover",
+    "width": 606,
+    "height": 917
+  },
+  "qiraat-maarid-thaer": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151476/altilgraf/content/qiraat-maarid-thaer.jpg",
+    "publicId": "altilgraf/content/qiraat-maarid-thaer",
+    "width": 273,
+    "height": 317
+  },
+  "author-khudair": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151477/altilgraf/content/author-khudair.jpg",
+    "publicId": "altilgraf/content/author-khudair",
+    "width": 1280,
+    "height": 853
+  },
+  "qiraat-munhadar-painting": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151477/altilgraf/content/qiraat-munhadar-painting.jpg",
+    "publicId": "altilgraf/content/qiraat-munhadar-painting",
+    "width": 370,
+    "height": 370
+  },
+  "author-noori": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151478/altilgraf/content/author-noori.jpg",
+    "publicId": "altilgraf/content/author-noori",
+    "width": 661,
+    "height": 717
+  },
+  "author-qadhafi": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151479/altilgraf/content/author-qadhafi.jpg",
+    "publicId": "altilgraf/content/author-qadhafi",
+    "width": 981,
+    "height": 1049
+  },
+  "hiwar-haddad-subject": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151480/altilgraf/content/hiwar-haddad-subject.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-subject",
+    "width": 1204,
+    "height": 1600
+  },
+  "hiwar-haddad-book1": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151480/altilgraf/content/hiwar-haddad-book1.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-book1",
+    "width": 973,
+    "height": 1381
+  },
+  "hiwar-haddad-book2": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784155871/altilgraf/content/hiwar-haddad-book2.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-book2",
+    "width": 401,
+    "height": 640
+  },
+  "hiwar-haddad-book3": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784155872/altilgraf/content/hiwar-haddad-book3.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-book3",
+    "width": 685,
+    "height": 1019
+  },
+  "hiwar-haddad-book4": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784155872/altilgraf/content/hiwar-haddad-book4.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-book4",
+    "width": 700,
+    "height": 500
+  },
+  "hiwar-haddad-book5": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784155873/altilgraf/content/hiwar-haddad-book5.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-book5",
+    "width": 569,
+    "height": 845
+  },
+  "hiwar-haddad-book6": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784155874/altilgraf/content/hiwar-haddad-book6.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-book6",
+    "width": 686,
+    "height": 1009
+  },
+  "hiwar-haddad-book7": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784155875/altilgraf/content/hiwar-haddad-book7.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-book7",
+    "width": 500,
+    "height": 788
+  },
+  "hiwar-haddad-book8": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784155876/altilgraf/content/hiwar-haddad-book8.jpg",
+    "publicId": "altilgraf/content/hiwar-haddad-book8",
+    "width": 615,
+    "height": 873
+  },
+  "author-jamal": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151483/altilgraf/content/author-jamal.jpg",
+    "publicId": "altilgraf/content/author-jamal",
+    "width": 1280,
+    "height": 1280
+  },
+  "hiwar-kadhim-subject": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151483/altilgraf/content/hiwar-kadhim-subject.jpg",
+    "publicId": "altilgraf/content/hiwar-kadhim-subject",
+    "width": 901,
+    "height": 902
+  },
+  "hiwar-kadhim-photo1": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151484/altilgraf/content/hiwar-kadhim-photo1.jpg",
+    "publicId": "altilgraf/content/hiwar-kadhim-photo1",
+    "width": 874,
+    "height": 1241
+  },
+  "hiwar-kadhim-photo2": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151485/altilgraf/content/hiwar-kadhim-photo2.jpg",
+    "publicId": "altilgraf/content/hiwar-kadhim-photo2",
+    "width": 1080,
+    "height": 1596
+  },
+  "hiwar-kadhim-photo3": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784151486/altilgraf/content/hiwar-kadhim-photo3.jpg",
+    "publicId": "altilgraf/content/hiwar-kadhim-photo3",
+    "width": 1528,
+    "height": 2048
+  },
+  "hiwar-kadhim-photo4": {
+    "url": "https://res.cloudinary.com/nz1gfsdt/image/upload/v1784155881/altilgraf/content/hiwar-kadhim-photo4.jpg",
+    "publicId": "altilgraf/content/hiwar-kadhim-photo4",
+    "width": 1410,
+    "height": 1963
+  }
+}
