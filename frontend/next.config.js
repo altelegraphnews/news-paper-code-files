@@ -2,6 +2,11 @@
 const nextConfig = {
   output: 'standalone',
   images: {
+    // Serve images straight from Cloudinary's CDN (f_auto,q_auto,w_) instead of
+    // the Next optimizer, which was dropping concurrent lazy thumbnail requests
+    // on the Railway container. See lib/cloudinaryLoader.js.
+    loader: 'custom',
+    loaderFile: './lib/cloudinaryLoader.js',
     remotePatterns: [
       {
         protocol: 'https',
