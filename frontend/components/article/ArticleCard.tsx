@@ -91,13 +91,13 @@ export default function ArticleCard({
     return (
       <article className={`group overflow-hidden rounded-sm border border-border bg-surface dark:bg-surface-dark dark:border-gray-800 shadow-card hover-lift hover:border-accent/40 ${className}`} style={{ borderColor: 'var(--color-border)' }}>
         <Link href={articleUrl(article)} className="block">
-          <div className="relative aspect-[16/9] overflow-hidden">
+          <div className="relative aspect-[16/9] overflow-hidden" style={{ background: 'var(--color-surface-2)' }}>
             {article.ogImage?.url ? (
               <Image
                 src={article.ogImage.url}
                 alt={article.ogImage.alt || article.title}
                 fill
-                className="object-cover img-zoom img-tone"
+                className="object-contain img-zoom img-tone"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             ) : (
@@ -138,13 +138,13 @@ export default function ArticleCard({
     return (
       <article className={`group flex gap-3 ${className}`}>
         <Link href={articleUrl(article)} className="flex gap-4 flex-1 items-start">
-          <div className="relative w-24 h-20 md:w-32 md:h-24 flex-shrink-0 rounded-sm overflow-hidden ring-1 ring-transparent group-hover:ring-accent/60 transition-[box-shadow] duration-300">
+          <div className="relative w-24 h-20 md:w-32 md:h-24 flex-shrink-0 rounded-sm overflow-hidden ring-1 ring-transparent group-hover:ring-accent/60 transition-[box-shadow] duration-300" style={{ background: 'var(--color-surface-2)' }}>
             {article.ogImage?.url ? (
               <Image
                 src={article.ogImage.url}
                 alt={article.ogImage.alt || article.title}
                 fill
-                className="object-cover img-zoom img-tone"
+                className="object-contain img-zoom img-tone"
                 sizes="128px"
               />
             ) : (
@@ -197,13 +197,13 @@ export default function ArticleCard({
   return (
     <article className={`group ${className}`}>
       <Link href={articleUrl(article)} className="block">
-        <div className="relative aspect-[16/9] rounded-sm overflow-hidden mb-3 frame-gold">
+        <div className="relative aspect-[16/9] rounded-sm overflow-hidden mb-3 frame-gold" style={{ background: 'var(--color-surface-2)' }}>
           {article.ogImage?.url ? (
             <Image
               src={article.ogImage.url}
               alt={article.ogImage.alt || article.title}
               fill
-              className="object-cover img-zoom img-tone"
+              className="object-contain img-zoom img-tone"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (

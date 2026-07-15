@@ -196,12 +196,12 @@ export default async function ArticlePage({ params }: Props) {
         {/* Hero image */}
         {article.ogImage?.url && (
           <figure className="rise rise-5 mb-8 -mx-4 md:mx-0">
-            <div className="relative aspect-[16/9] md:rounded-sm overflow-hidden frame-gold shadow-card">
+            <div className="relative aspect-[16/9] md:rounded-sm overflow-hidden frame-gold shadow-card" style={{ background: 'var(--color-surface-2)' }}>
               <Image
                 src={article.ogImage.url}
                 alt={article.ogImage.alt || article.title}
                 fill
-                className="object-cover"
+                className="object-contain"
                 priority
                 sizes="(max-width: 896px) 100vw, 896px"
               />
