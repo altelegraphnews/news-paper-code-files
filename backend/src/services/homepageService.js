@@ -98,6 +98,26 @@ const buildHomepageData = async () => {
   featuredArticles = featuredArticles.filter((a) => !heroSlideIds.has(String(a._id)));
   featuredArticles = featuredArticles.slice(0, 4);
 
+  // Backfill: the "مختارات" strip beside the hero must never run empty just
+  // because the carousel absorbed every featured pick — top up with the most
+  // recent articles that aren't already on screen up there.
+  if (featuredArticles.length < 4) {
+    const excludeIds = [
+      ...heroSlides.map((a) => a._id),
+      ...featuredArticles.map((a) => a._id),
+    ];
+    const backfill = await withCardFields(
+      Article.find({
+        status: 'published',
+        isDeleted: { $ne: true },
+        _id: { $nin: excludeIds },
+      })
+        .sort('-publishedAt')
+        .limit(4 - featuredArticles.length)
+    );
+    featuredArticles = featuredArticles.concat(backfill);
+  }
+
   const [latestArticles, breakingArticles, tickers, categories] = await Promise.all([
     // Latest articles
     withCardFields(Article.find({ status: 'published', isDeleted: { $ne: true } }).sort('-publishedAt').limit(12)),

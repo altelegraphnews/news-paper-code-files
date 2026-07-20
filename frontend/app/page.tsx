@@ -20,6 +20,15 @@ export const revalidate = 60; // ISR: revalidate every 60 seconds
 
 const ARABIC_NUMERALS = ['١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩', '١٠'];
 
+/** Grid column class per article count — a 2-article row renders as 2 wide
+ *  cards instead of leaving half a 4-column shelf empty. */
+const GRID_COLS: Record<number, string> = {
+  2: 'lg:grid-cols-2',
+  3: 'lg:grid-cols-3',
+  4: 'lg:grid-cols-4',
+};
+const gridColsFor = (count: number) => GRID_COLS[Math.min(count, 4)] || 'lg:grid-cols-4';
+
 /** Classic newspaper dateline above the masthead fold (refreshes with ISR) */
 function Dateline() {
   const now = new Date();
@@ -140,7 +149,7 @@ function OpinionSection({ articles }: { articles: Article[] }) {
   return (
     <section className="py-12">
       <SectionHeader title="رأي وتحليل" href="/opinion" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsFor(articles.length)} gap-6`}>
         {articles.slice(0, 4).map((article: Article, i: number) => (
           <Reveal key={article._id} delay={i * 90}>
             <article
@@ -205,13 +214,20 @@ function CategorySection({
   category: { name: string; slug: string; color?: string };
   articles: Article[];
 }) {
-  if (!articles?.length) return null;
+  // A single orphan card reads as a broken shelf — skip until there's a pair.
+  if (!articles || articles.length < 2) return null;
+  const shown = articles.slice(0, 4);
   return (
     <Reveal as="section" className="py-10 border-t border-[color:var(--color-border)]">
       <SectionHeader title={category.name} href={`/category/${category.slug}`} />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {articles.slice(0, 4).map((article: Article, i: number) => (
-          <ArticleCard key={article._id} article={article} variant={i === 0 ? 'featured' : 'standard'} />
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsFor(shown.length)} gap-6`}>
+        {shown.map((article: Article) => (
+          <ArticleCard
+            key={article._id}
+            article={article}
+            variant="standard"
+            showExcerpt={shown.length <= 2}
+          />
         ))}
       </div>
     </Reveal>
@@ -286,16 +302,20 @@ export default async function HomePage() {
             )}
           </div>
 
-          {/* Secondary featured */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-3 mb-3 rise rise-2">
+          {/* Secondary featured — rows stretch evenly so the strip's last
+              hairline lands flush with the hero's bottom edge */}
+          <div className="flex flex-col">
+            <div className="flex items-center gap-3 mb-2 rise rise-2">
               <span className="font-display text-accent-700 dark:text-accent-300 text-base">مختارات</span>
               <span className="morse-line morse-line--subtle flex-1" aria-hidden="true" />
             </div>
-            <div className="flex flex-col gap-5 flex-1 justify-between">
-              {(featured || []).slice(0, 3).map((article: Article, i: number) => (
-                <div key={article._id} className={`rise rise-${Math.min(i + 3, 6)}`}>
-                  <ArticleCard article={article} variant="horizontal" />
+            <div className="flex flex-col flex-1 divide-y divide-[color:var(--color-border)]">
+              {(featured || []).slice(0, 4).map((article: Article, i: number) => (
+                <div
+                  key={article._id}
+                  className={`rise rise-${Math.min(i + 3, 6)} flex-1 flex items-center py-3.5 first:pt-1.5 last:pb-0`}
+                >
+                  <ArticleCard article={article} variant="horizontal" className="w-full" />
                 </div>
               ))}
             </div>
@@ -331,16 +351,24 @@ export default async function HomePage() {
           )}
         </Reveal>
 
-        {/* Sidebar */}
-        <Reveal as="aside" delay={120} className="space-y-6">
-          <MostReadSidebar articles={mostRead} />
+        {/* Sidebar — sticks under the navbar while the latest column scrolls */}
+        <Reveal as="aside" delay={120}>
+          <div className="space-y-6 lg:sticky lg:top-[calc(var(--ticker-height)+var(--navbar-height)+1.25rem)]">
+            <MostReadSidebar articles={mostRead} />
+          </div>
         </Reveal>
       </div>
 
-      {/* Category rows */}
-      {(categoryRows || []).map((row: { category: { name: string; slug: string; color?: string }; articles: Article[] }) => (
-        <CategorySection key={row.category.slug} category={row.category} articles={row.articles} />
-      ))}
+      {/* Category rows — skip the opinion category here; it gets its own
+          treatment below, and repeating the same articles twice reads sloppy */}
+      {(categoryRows || [])
+        .filter(
+          (row: { category: { slug: string }; articles: Article[] }) =>
+            !(opinion?.length && (row.category.slug === 'fikr' || row.category.slug === 'madkhal'))
+        )
+        .map((row: { category: { name: string; slug: string; color?: string }; articles: Article[] }) => (
+          <CategorySection key={row.category.slug} category={row.category} articles={row.articles} />
+        ))}
 
       {/* Opinion */}
       <OpinionSection articles={opinion} />

@@ -97,7 +97,7 @@ export default function ArticleCard({
                 src={article.ogImage.url}
                 alt={article.ogImage.alt || article.title}
                 fill
-                className="object-contain img-zoom img-tone"
+                className="object-cover object-top img-zoom img-tone"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             ) : (
@@ -144,7 +144,7 @@ export default function ArticleCard({
                 src={article.ogImage.url}
                 alt={article.ogImage.alt || article.title}
                 fill
-                className="object-contain img-zoom img-tone"
+                className="object-cover object-top img-zoom img-tone"
                 sizes="128px"
               />
             ) : (
@@ -160,6 +160,11 @@ export default function ArticleCard({
             <h3 className="font-heading font-bold text-base leading-relaxed line-clamp-2 mt-0.5" style={{ color: 'var(--color-text-primary)' }}>
               <span className="headline-link">{article.title}</span>
             </h3>
+            {showExcerpt && article.excerpt && (
+              <p className="text-sm font-body line-clamp-2 mt-1.5 hidden md:block" style={{ color: 'var(--color-text-secondary)' }}>
+                {article.excerpt}
+              </p>
+            )}
             {article.publishedAt && (
               <time className="text-xs font-arabic mt-1.5 block" style={{ color: 'var(--color-text-muted)' }} dateTime={article.publishedAt}>
                 {getRelativeTime(article.publishedAt)}
@@ -203,7 +208,7 @@ export default function ArticleCard({
               src={article.ogImage.url}
               alt={article.ogImage.alt || article.title}
               fill
-              className="object-contain img-zoom img-tone"
+              className="object-cover object-top img-zoom img-tone"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (
