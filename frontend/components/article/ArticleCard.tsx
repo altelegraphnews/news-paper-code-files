@@ -14,6 +14,39 @@ interface ArticleCardProps {
 const articleUrl = (article: Article) =>
   `/article/${article.category?.slug || 'uncategorized'}/${article.slug}`;
 
+/**
+ * Card thumbnail that never crops the subject: the artwork sits
+ * object-contain over a blurred cover-fill of itself, so odd ratios
+ * (author portraits, book covers) fill the frame without beheading
+ * faces or leaving flat gray letterbox bars. The backdrop requests a
+ * tiny variant (sizes=128px) — it's blurred anyway, so it costs a few KB.
+ * Paint order relies on DOM order (backdrop first), so no z-index games
+ * and later badges still stack above.
+ */
+function CardThumb({ article, sizes }: { article: Article; sizes: string }) {
+  const img = article.ogImage;
+  if (!img?.url) return null;
+  return (
+    <>
+      <Image
+        src={img.url}
+        alt=""
+        aria-hidden
+        fill
+        className="object-cover scale-125 blur-lg brightness-[.92] saturate-[.85]"
+        sizes="128px"
+      />
+      <Image
+        src={img.url}
+        alt={img.alt || article.title}
+        fill
+        className="object-contain img-zoom img-tone"
+        sizes={sizes}
+      />
+    </>
+  );
+}
+
 export default function ArticleCard({
   article,
   variant = 'standard',
@@ -93,13 +126,7 @@ export default function ArticleCard({
         <Link href={articleUrl(article)} className="block">
           <div className="relative aspect-[16/9] overflow-hidden" style={{ background: 'var(--color-surface-2)' }}>
             {article.ogImage?.url ? (
-              <Image
-                src={article.ogImage.url}
-                alt={article.ogImage.alt || article.title}
-                fill
-                className="object-cover object-top img-zoom img-tone"
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              />
+              <CardThumb article={article} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-800 dark:to-accent-950" />
             )}
@@ -140,13 +167,7 @@ export default function ArticleCard({
         <Link href={articleUrl(article)} className="flex gap-4 flex-1 items-start">
           <div className="relative w-24 h-20 md:w-32 md:h-24 flex-shrink-0 rounded-sm overflow-hidden ring-1 ring-transparent group-hover:ring-accent/60 transition-[box-shadow] duration-300" style={{ background: 'var(--color-surface-2)' }}>
             {article.ogImage?.url ? (
-              <Image
-                src={article.ogImage.url}
-                alt={article.ogImage.alt || article.title}
-                fill
-                className="object-cover object-top img-zoom img-tone"
-                sizes="128px"
-              />
+              <CardThumb article={article} sizes="128px" />
             ) : (
               <div className="w-full h-full" style={{ background: 'var(--color-surface-2)' }} />
             )}
@@ -204,13 +225,7 @@ export default function ArticleCard({
       <Link href={articleUrl(article)} className="block">
         <div className="relative aspect-[16/9] rounded-sm overflow-hidden mb-3 frame-gold" style={{ background: 'var(--color-surface-2)' }}>
           {article.ogImage?.url ? (
-            <Image
-              src={article.ogImage.url}
-              alt={article.ogImage.alt || article.title}
-              fill
-              className="object-cover object-top img-zoom img-tone"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
+            <CardThumb article={article} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
           ) : (
             <div className="w-full h-full" style={{ background: 'var(--color-surface-2)' }} />
           )}
