@@ -19,7 +19,7 @@ export default function MastheadBanner() {
       <Link
         href="/"
         aria-label="التلغراف — الصفحة الرئيسية"
-        className="block max-w-[1200px] mx-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
+        className="block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
       >
         <img
           src="/masthead.jpg"
