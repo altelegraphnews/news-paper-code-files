@@ -159,21 +159,16 @@ export default function HeroCarousel({ slides, interval = 6500, className = '' }
       })}
 
       {isCarousel && (
-        <>
-          {/* Arrows — RTL, so "next" sits on the left edge */}
-          <button
-            type="button"
-            onClick={next}
-            aria-label="المقال التالي"
-            className="hero-nav hero-nav--next"
-          >
-            <span aria-hidden="true">←</span>
-          </button>
+        // Bottom control bar: prev/next flank the tick indicators. Sits in the
+        // band the caption's bottom padding reserves, so it never overlaps the
+        // headline. RTL flex order: prev (→) lands on the right, next (←) on
+        // the left, ticks stretch between.
+        <div className="hero-controls" role="group" aria-label="التنقل بين المقالات">
           <button
             type="button"
             onClick={prev}
             aria-label="المقال السابق"
-            className="hero-nav hero-nav--prev"
+            className="hero-nav"
           >
             <span aria-hidden="true">→</span>
           </button>
@@ -209,7 +204,16 @@ export default function HeroCarousel({ slides, interval = 6500, className = '' }
               </button>
             ))}
           </div>
-        </>
+
+          <button
+            type="button"
+            onClick={next}
+            aria-label="المقال التالي"
+            className="hero-nav"
+          >
+            <span aria-hidden="true">←</span>
+          </button>
+        </div>
       )}
     </div>
   );
