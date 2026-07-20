@@ -43,7 +43,7 @@ export default function Navbar({ categories = [] }: { categories?: Category[] })
     <>
       <header
         className={clsx(
-          'navbar fixed top-[44px] left-0 right-0 z-navbar transition-all duration-300 border-b',
+          'navbar sticky top-[44px] left-0 right-0 z-navbar transition-all duration-300 border-b',
           isScrolled
             ? 'navbar-scrolled border-accent/30'
             : 'bg-ink border-white/10'

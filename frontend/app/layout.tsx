@@ -4,6 +4,7 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'react-hot-toast';
 import Navbar from '@/components/layout/Navbar';
 import NewsTicker from '@/components/layout/NewsTicker';
+import MastheadBanner from '@/components/layout/MastheadBanner';
 import Footer from '@/components/layout/Footer';
 import ScrollToTop from '@/components/ui/ScrollToTop';
 import { API_URL } from '@/lib/api';
@@ -169,8 +170,9 @@ export default async function RootLayout({
               انتقل إلى المحتوى الرئيسي
             </a>
             <NewsTicker />
+            <MastheadBanner />
             <Navbar categories={navCategories} />
-            <main id="main-content" className="flex-1 mt-[calc(var(--navbar-height)+var(--ticker-height))]">
+            <main id="main-content" className="flex-1">
               {children}
             </main>
             <Footer />
