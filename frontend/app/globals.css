@@ -720,7 +720,11 @@ a {
   isolation: isolate;
 }
 
-.hero-slide {
+/* Scoped under .hero-carousel so `position: absolute` here outranks the
+   `.frame-gold { position: relative }` also on each slide — same specificity
+   otherwise, and frame-gold would win on source order, collapsing the slide
+   (all its children are absolute) to height 0. */
+.hero-carousel .hero-slide {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -732,7 +736,7 @@ a {
     visibility 0s linear 850ms;
 }
 
-.hero-slide.is-active {
+.hero-carousel .hero-slide.is-active {
   opacity: 1;
   visibility: visible;
   transform: scale(1);
@@ -849,12 +853,12 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-slide {
+  .hero-carousel .hero-slide {
     transform: none;
     transition: opacity 200ms linear, visibility 0s linear 200ms;
   }
 
-  .hero-slide.is-active {
+  .hero-carousel .hero-slide.is-active {
     transform: none;
     transition: opacity 200ms linear, visibility 0s;
   }
