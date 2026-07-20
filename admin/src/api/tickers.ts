@@ -13,8 +13,11 @@ export interface Ticker {
 }
 
 export const tickersApi = {
+  // Admin view needs ALL tickers (incl. inactive/scheduled) so they can be
+  // managed. `GET /tickers` is the public feed — active-only — which made the
+  // admin list look empty whenever nothing was currently live.
   list: () =>
-    apiClient.get('/tickers'),
+    apiClient.get('/tickers/all'),
 
   create: (data: Partial<Ticker>) =>
     apiClient.post('/tickers', data),
