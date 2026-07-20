@@ -44,6 +44,32 @@ const getSignedUploadParams = (folder = 'alwid') => {
 };
 
 /**
+ * Upload a file buffer straight to Cloudinary (server-side, authenticated).
+ * Used by the admin media library, which POSTs multipart files to the backend
+ * rather than uploading to Cloudinary directly. `resource_type: 'auto'` lets
+ * the same path handle images and video.
+ */
+const uploadBuffer = (buffer, { folder = 'alwid/media' } = {}) =>
+  new Promise((resolve, reject) => {
+    if (!isConfigured) {
+      const err = new Error('خدمة الوسائط (Cloudinary) غير مُهيأة على الخادم');
+      err.statusCode = 503;
+      return reject(err);
+    }
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: 'auto' },
+      (error, result) => {
+        if (error) {
+          logger.error('Cloudinary upload error:', error.message);
+          return reject(error);
+        }
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+
+/**
  * Delete media asset by public ID
  */
 const deleteAsset = async (publicId) => {
@@ -90,4 +116,4 @@ const getAsset = async (publicId) => {
   }
 };
 
-module.exports = { getSignedUploadParams, deleteAsset, listAssets, getAsset };
+module.exports = { getSignedUploadParams, uploadBuffer, deleteAsset, listAssets, getAsset };
