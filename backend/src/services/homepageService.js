@@ -9,6 +9,7 @@ const logger = require('../utils/logger');
 
 const CACHE_KEY = 'homepage:data';
 const CACHE_TTL = 60; // 60 seconds
+const MAX_HERO_SLIDES = 7; // articles the hero carousel rotates through
 
 // Admin homepage overrides live in the `siteconfigs` collection (set via the
 // admin PUT /homepage/hero and /homepage/featured routes).
@@ -34,24 +35,49 @@ const withCardFields = (query) =>
  */
 const buildHomepageData = async () => {
   // Admin-configured hero + featured overrides (fall back to auto-selection).
-  const [heroIdCfg, featuredIdsCfg] = await Promise.all([
+  const [heroSlideIdsCfg, heroIdCfg, featuredIdsCfg] = await Promise.all([
+    getSiteConfig('homepage:heroSlides'),
     getSiteConfig('homepage:hero'),
     getSiteConfig('homepage:featured'),
   ]);
 
-  // Hero: use the admin's pick if it is still published, otherwise the most
-  // recent featured article.
-  let heroArticle = null;
-  if (heroIdCfg) {
-    heroArticle = await withCardFields(
+  // Hero carousel: the admin's ordered list of up to 7 articles. Anything
+  // unpublished or deleted since it was picked drops out silently.
+  let heroSlides = [];
+  if (Array.isArray(heroSlideIdsCfg) && heroSlideIdsCfg.length) {
+    const found = await withCardFields(
+      Article.find({
+        _id: { $in: heroSlideIdsCfg },
+        status: 'published',
+        isDeleted: { $ne: true },
+      })
+    );
+    const byId = new Map(found.map((a) => [String(a._id), a]));
+    heroSlides = heroSlideIdsCfg.map((id) => byId.get(String(id))).filter(Boolean);
+  }
+
+  // Legacy single-hero pick, for configs saved before the carousel existed.
+  if (!heroSlides.length && heroIdCfg) {
+    const legacyHero = await withCardFields(
       Article.findOne({ _id: heroIdCfg, status: 'published', isDeleted: { $ne: true } })
     );
+    if (legacyHero) heroSlides = [legacyHero];
   }
-  if (!heroArticle) {
-    heroArticle = await withCardFields(
+
+  // Nothing chosen (or nothing survived): fall back to the single most recent
+  // featured article, as before. Deliberately not a full carousel — the
+  // featured strip beside the hero draws from the same pool and would be left
+  // empty if seven articles were pulled into the carousel.
+  if (!heroSlides.length) {
+    const autoHero = await withCardFields(
       Article.findOne({ status: 'published', isFeatured: true, isDeleted: { $ne: true } }).sort('-publishedAt')
     );
+    if (autoHero) heroSlides = [autoHero];
   }
+  heroSlides = heroSlides.slice(0, MAX_HERO_SLIDES);
+
+  // `hero` stays the first slide so existing consumers keep working.
+  const heroArticle = heroSlides[0] || null;
 
   // Secondary featured: use the admin's ordered list if set, else auto (most
   // recent isFeatured). Never repeat the hero; cap at 4.
@@ -67,9 +93,9 @@ const buildHomepageData = async () => {
       Article.find({ status: 'published', isFeatured: true, isDeleted: { $ne: true } }).sort('-publishedAt').limit(6)
     );
   }
-  if (heroArticle) {
-    featuredArticles = featuredArticles.filter((a) => String(a._id) !== String(heroArticle._id));
-  }
+  // Nothing in the carousel should reappear in the strip beside it.
+  const heroSlideIds = new Set(heroSlides.map((a) => String(a._id)));
+  featuredArticles = featuredArticles.filter((a) => !heroSlideIds.has(String(a._id)));
   featuredArticles = featuredArticles.slice(0, 4);
 
   const [latestArticles, breakingArticles, tickers, categories] = await Promise.all([
@@ -149,6 +175,7 @@ const buildHomepageData = async () => {
 
   return {
     hero: heroArticle,
+    heroSlides,
     featured: featuredArticles,
     latest: latestArticles,
     breaking: breakingArticles,

@@ -91,50 +91,60 @@ function ArticleSearch({
   )
 }
 
+// The homepage hero cross-fades through this many articles at most.
+const MAX_HERO_SLIDES = 7
+
 export default function HomepageControl() {
-  const [heroArticle, setHeroArticle] = useState<ArticleOption | null>(null)
+  const [heroSlides, setHeroSlides] = useState<ArticleOption[]>([])
   const [featuredArticles, setFeaturedArticles] = useState<ArticleOption[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [invalidating, setInvalidating] = useState(false)
-  const [heroSearch, setHeroSearch] = useState('')
-  const [heroResults, setHeroResults] = useState<ArticleOption[]>([])
-  const [heroLoading, setHeroLoading] = useState(false)
-  const debouncedHeroSearch = useDebounce(heroSearch, 400)
-
-  useEffect(() => {
-    if (!debouncedHeroSearch.trim()) { setHeroResults([]); return }
-    setHeroLoading(true)
-    articlesApi.list({ search: debouncedHeroSearch, status: 'published', limit: 6 })
-      .then((res) => setHeroResults(res.data?.data || []))
-      .catch(() => {})
-      .finally(() => setHeroLoading(false))
-  }, [debouncedHeroSearch])
 
   const load = useCallback(() => {
     setLoading(true)
-    // Load hero and featured from the homepage API
+    // Load hero slides and featured from the homepage API
     Promise.allSettled([
-      homepageApi.getHero().catch(() => ({ data: { data: null } })),
+      homepageApi.getHeroSlides().catch(() => ({ data: { data: [] } })),
       homepageApi.getFeatured().catch(() => ({ data: { data: [] } })),
     ]).then(([heroRes, featuredRes]) => {
-      if (heroRes.status === 'fulfilled') setHeroArticle((heroRes.value as any).data?.data || null)
+      if (heroRes.status === 'fulfilled') setHeroSlides((heroRes.value as any).data?.data || [])
       if (featuredRes.status === 'fulfilled') setFeaturedArticles((featuredRes.value as any).data?.data || [])
     }).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => { load() }, [load])
 
-  const handleSetHero = async (article: ArticleOption) => {
+  // Persist the slide list, rolling the UI back if the save fails.
+  const saveHeroSlides = async (list: ArticleOption[], successMsg: string) => {
+    const previous = heroSlides
+    setHeroSlides(list)
     setSaving(true)
     try {
-      await homepageApi.setHero(article._id)
-      setHeroArticle(article)
-      setHeroSearch('')
-      setHeroResults([])
-      toast.success('تم تعيين الخبر الرئيسي')
-    } catch { toast.error('فشل في تعيين الخبر الرئيسي') }
-    finally { setSaving(false) }
+      await homepageApi.setHeroSlides(list.map((a) => a._id))
+      toast.success(successMsg)
+    } catch {
+      setHeroSlides(previous)
+      toast.error('فشل في الحفظ')
+    } finally { setSaving(false) }
+  }
+
+  const handleAddHeroSlide = (article: ArticleOption) => {
+    if (heroSlides.length >= MAX_HERO_SLIDES) {
+      toast.error(`الحد الأقصى ${MAX_HERO_SLIDES} مقالات في الواجهة`)
+      return
+    }
+    saveHeroSlides([...heroSlides, article], 'تمت الإضافة إلى الواجهة')
+  }
+
+  const handleRemoveHeroSlide = (id: string) =>
+    saveHeroSlides(heroSlides.filter((a) => a._id !== id), 'تمت الإزالة من الواجهة')
+
+  const handleMoveHeroSlide = (fromIdx: number, toIdx: number) => {
+    const reordered = [...heroSlides]
+    const [item] = reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, item)
+    saveHeroSlides(reordered, 'تم إعادة الترتيب')
   }
 
   const handleAddFeatured = async (article: ArticleOption) => {
@@ -222,71 +232,92 @@ export default function HomepageControl() {
         </div>
       </div>
 
-      {/* Hero Article */}
+      {/* Hero carousel slides */}
       <div className="card">
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div className="w-8 h-8 rounded-md bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
             <Star className="w-4 h-4 text-red-600" />
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900 dark:text-white">الخبر الرئيسي (Hero)</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500">يظهر في أعلى الصفحة الرئيسية بشكل بارز</p>
+            <h2 className="font-semibold text-gray-900 dark:text-white">مقالات الواجهة (Hero)</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {heroSlides.length}/{MAX_HERO_SLIDES} مقالات — تتناوب تلقائياً في أعلى الصفحة الرئيسية بالترتيب أدناه
+            </p>
           </div>
         </div>
         <div className="p-5 space-y-4">
-          {heroArticle && (
-            <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/10 rounded-md border border-green-100 dark:border-green-800">
-              {heroArticle.featuredImage?.url && (
-                <img src={heroArticle.featuredImage.url} alt="" className="w-16 h-12 object-cover rounded-md flex-shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2">{heroArticle.title}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{heroArticle.category?.name || ''}</p>
-              </div>
-              <button
-                onClick={() => setHeroArticle(null)}
-                className="p-1.5 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          {heroSlides.length > 0 && (
+            <div className="space-y-2">
+              {heroSlides.map((article, idx) => (
+                <div
+                  key={article._id}
+                  className={clsx(
+                    'flex items-center gap-3 p-3 rounded-md border',
+                    idx === 0
+                      ? 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800'
+                      : 'bg-gray-50 dark:bg-gray-800 border-transparent'
+                  )}
+                >
+                  <GripVertical className="w-4 h-4 text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                  <span className="text-sm font-bold text-gray-400 w-5 flex-shrink-0">{idx + 1}</span>
+                  {article.featuredImage?.url ? (
+                    <img src={article.featuredImage.url} alt="" className="w-12 h-9 object-cover rounded flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-9 bg-gray-200 dark:bg-gray-600 rounded flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-1">{article.title}</p>
+                    <p className="text-xs text-gray-400">
+                      {article.category?.name || ''}
+                      {idx === 0 && <span className="text-green-600 dark:text-green-400 mr-1">• يظهر أولاً</span>}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => idx > 0 && handleMoveHeroSlide(idx, idx - 1)}
+                      disabled={idx === 0}
+                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="تحريك للأعلى"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => idx < heroSlides.length - 1 && handleMoveHeroSlide(idx, idx + 1)}
+                      disabled={idx === heroSlides.length - 1}
+                      className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="تحريك للأسفل"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => handleRemoveHeroSlide(article._id)}
+                      className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-          <div className="relative">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                value={heroSearch}
-                onChange={(e) => setHeroSearch(e.target.value)}
-                placeholder="ابحث عن مقال لتعيينه خبراً رئيسياً..."
-                className="w-full pr-9 pl-4 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
-              />
-              {heroLoading && (
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-              )}
-            </div>
-            {heroResults.length > 0 && (
-              <div className="absolute z-50 top-full mt-1 w-full bg-surface dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
-                {heroResults.map((article) => (
-                  <button
-                    key={article._id}
-                    type="button"
-                    onClick={() => handleSetHero(article)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-right hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    {article.featuredImage?.url ? (
-                      <img src={article.featuredImage.url} alt="" className="w-10 h-8 object-cover rounded flex-shrink-0" />
-                    ) : (
-                      <div className="w-10 h-8 bg-gray-200 dark:bg-gray-600 rounded flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-800 dark:text-gray-200 line-clamp-1">{article.title}</p>
-                      <p className="text-xs text-gray-400">{article.category?.name || ''}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+
+          {heroSlides.length < MAX_HERO_SLIDES ? (
+            <ArticleSearch
+              placeholder="ابحث عن مقال لإضافته إلى الواجهة..."
+              onSelect={handleAddHeroSlide}
+              selectedIds={heroSlides.map((a) => a._id)}
+            />
+          ) : (
+            <p className="text-xs text-center text-gray-400">
+              وصلت للحد الأقصى ({MAX_HERO_SLIDES} مقالات). احذف مقالاً لإضافة آخر.
+            </p>
+          )}
+
+          {heroSlides.length === 1 && (
+            <p className="text-xs text-center text-gray-400">
+              أضف مقالاً آخر على الأقل لتفعيل التناوب في الواجهة.
+            </p>
+          )}
         </div>
       </div>
 
@@ -357,7 +388,7 @@ export default function HomepageControl() {
             <ArticleSearch
               placeholder="ابحث عن مقال لإضافته للمميزات..."
               onSelect={handleAddFeatured}
-              selectedIds={[...featuredArticles.map((a) => a._id), heroArticle?._id || '']}
+              selectedIds={[...featuredArticles.map((a) => a._id), ...heroSlides.map((a) => a._id)]}
             />
           )}
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import ArticleCard from '@/components/article/ArticleCard';
+import HeroCarousel from '@/components/homepage/HeroCarousel';
 import { Skeleton } from '@/components/ui/Skeleton';
 import NewsletterForm from '@/components/ui/NewsletterForm';
 import Reveal from '@/components/ui/Reveal';
@@ -264,7 +265,10 @@ export default async function HomePage() {
     );
   }
 
-  const { hero, featured = [], latest = [], categoryRows = [], mostRead = [], opinion = [] } = data;
+  const { hero, heroSlides, featured = [], latest = [], categoryRows = [], mostRead = [], opinion = [] } = data;
+
+  // Older API responses predate the carousel and only send a single `hero`.
+  const slides: Article[] = heroSlides?.length ? heroSlides : hero ? [hero] : [];
 
   return (
     <div className="container mx-auto px-4 max-w-7xl">
@@ -275,8 +279,8 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Hero */}
           <div className="lg:col-span-2">
-            {hero ? (
-              <ArticleCard article={hero} variant="hero" className="h-full min-h-[340px] md:min-h-[480px]" showExcerpt />
+            {slides.length ? (
+              <HeroCarousel slides={slides} className="h-full min-h-[340px] md:min-h-[480px]" />
             ) : (
               <Skeleton className="h-[480px] rounded-sm" />
             )}

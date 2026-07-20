@@ -28,6 +28,13 @@ export const homepageApi = {
   setHero: (articleId: string) =>
     apiClient.put('/homepage/hero', { articleId }),
 
+  /** Ordered articles the homepage hero carousel rotates through (max 7) */
+  getHeroSlides: () =>
+    apiClient.get('/homepage/hero-slides'),
+
+  setHeroSlides: (articleIds: string[]) =>
+    apiClient.put('/homepage/hero-slides', { articleIds }),
+
   getBreaking: () =>
     apiClient.get('/homepage/breaking'),
 

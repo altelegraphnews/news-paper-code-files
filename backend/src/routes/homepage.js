@@ -35,6 +35,12 @@ router.get('/', publicLimiter, async (req, res, next) => {
   }
 });
 
+// Max articles the hero carousel rotates through.
+const MAX_HERO_SLIDES = 7;
+
+// Card fields the admin picker needs to render a row.
+const ADMIN_CARD_FIELDS = 'title slug category ogImage featuredImage publishedAt status';
+
 // GET /homepage/hero — return current hero article
 router.get('/hero', verifyToken, requirePermission('homepage.manage'), async (req, res, next) => {
   try {
@@ -42,7 +48,7 @@ router.get('/hero', verifyToken, requirePermission('homepage.manage'), async (re
     if (!heroId) return success(res, null);
     const article = await Article.findById(heroId)
       .populate('category', 'name slug')
-      .select('title slug category ogImage publishedAt status')
+      .select(ADMIN_CARD_FIELDS)
       .lean();
     return success(res, article || null);
   } catch (err) { next(err); }
@@ -55,6 +61,38 @@ router.put('/hero', verifyToken, requirePermission('homepage.manage'), async (re
     await setConfig('homepage:hero', articleId || null);
     await invalidateCache();
     return success(res, null, 'تم تعيين الخبر الرئيسي');
+  } catch (err) { next(err); }
+});
+
+// GET /homepage/hero-slides — ordered articles the hero carousel rotates through.
+// Falls back to the legacy single-hero pick so existing setups keep working.
+router.get('/hero-slides', verifyToken, requirePermission('homepage.manage'), async (req, res, next) => {
+  try {
+    let ids = await getConfig('homepage:heroSlides');
+    if (!Array.isArray(ids) || !ids.length) {
+      const legacyHero = await getConfig('homepage:hero');
+      ids = legacyHero ? [legacyHero] : [];
+    }
+    if (!ids.length) return success(res, []);
+    const articles = await Article.find({ _id: { $in: ids } })
+      .populate('category', 'name slug')
+      .select(ADMIN_CARD_FIELDS)
+      .lean();
+    const ordered = ids.map((id) => articles.find((a) => String(a._id) === String(id))).filter(Boolean);
+    return success(res, ordered);
+  } catch (err) { next(err); }
+});
+
+// PUT /homepage/hero-slides — set the carousel list
+router.put('/hero-slides', verifyToken, requirePermission('homepage.manage'), async (req, res, next) => {
+  try {
+    const { articleIds } = req.body;
+    const ids = Array.isArray(articleIds) ? articleIds.slice(0, MAX_HERO_SLIDES) : [];
+    await setConfig('homepage:heroSlides', ids);
+    // Keep the legacy key in step so anything still reading it sees slide one.
+    await setConfig('homepage:hero', ids[0] || null);
+    await invalidateCache();
+    return success(res, null, 'تم حفظ مقالات الواجهة');
   } catch (err) { next(err); }
 });
 

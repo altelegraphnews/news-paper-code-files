@@ -711,6 +711,160 @@ a {
   box-shadow: var(--shadow-card-hover);
 }
 
+/* ============================================================
+   HERO CAROUSEL
+   Cross-fades through the admin-chosen hero articles. Slides stack
+   in place; only the active one is opaque and hit-testable.
+   ============================================================ */
+.hero-carousel {
+  isolation: isolate;
+}
+
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1.03);
+  transition:
+    opacity 850ms var(--ease-out-soft),
+    transform 1100ms var(--ease-out-soft),
+    visibility 0s linear 850ms;
+}
+
+.hero-slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  transition:
+    opacity 850ms var(--ease-out-soft),
+    transform 1100ms var(--ease-out-soft),
+    visibility 0s;
+  z-index: 1;
+}
+
+/* Prev/next arrows — ghosted until the hero is hovered or focused */
+.hero-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-top: -1.375rem;
+  font-size: 1.125rem;
+  color: var(--color-paper, #f7f3ea);
+  background: rgba(16, 16, 18, 0.42);
+  border: 1px solid rgba(233, 207, 125, 0.28);
+  border-radius: 2px;
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition:
+    opacity 300ms var(--ease-out-soft),
+    background-color 300ms var(--ease-out-soft),
+    border-color 300ms var(--ease-out-soft),
+    transform 300ms var(--ease-out-soft);
+}
+
+.hero-nav--next { left: 0.85rem; transform: translateX(6px); }
+.hero-nav--prev { right: 0.85rem; transform: translateX(-6px); }
+
+.hero-carousel:hover .hero-nav,
+.hero-carousel:focus-within .hero-nav {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.hero-nav:hover {
+  background: rgba(16, 16, 18, 0.72);
+  border-color: rgba(233, 207, 125, 0.7);
+}
+
+.hero-nav:focus-visible {
+  opacity: 1;
+  transform: translateX(0);
+  outline: 2px solid var(--color-accent, #e9cf7d);
+  outline-offset: 2px;
+}
+
+/* Telegraph-tape indicator: one tick per slide, active one fills with time */
+.hero-ticks {
+  position: absolute;
+  bottom: 1.15rem;
+  right: 1.25rem;
+  left: 1.25rem;
+  z-index: 3;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.hero-tick {
+  position: relative;
+  flex: 1;
+  height: 3px;
+  max-width: 4.5rem;
+  overflow: hidden;
+  background: rgba(247, 243, 234, 0.28);
+  border-radius: 1px;
+  transition: height 250ms var(--ease-out-soft), background-color 250ms var(--ease-out-soft);
+}
+
+.hero-tick::after {
+  /* Widen the pointer/touch target without thickening the mark itself */
+  content: '';
+  position: absolute;
+  inset: -0.6rem 0;
+}
+
+.hero-tick:hover,
+.hero-tick:focus-visible {
+  background: rgba(247, 243, 234, 0.5);
+  height: 5px;
+  outline: none;
+}
+
+.hero-tick.is-active {
+  height: 5px;
+}
+
+.hero-tick__fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--color-accent, #e9cf7d);
+  transform: scaleX(0);
+  transform-origin: right center; /* RTL: fills from the reading start */
+}
+
+.hero-tick.is-active .hero-tick__fill {
+  animation: hero-tick-fill linear forwards;
+}
+
+@keyframes hero-tick-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide {
+    transform: none;
+    transition: opacity 200ms linear, visibility 0s linear 200ms;
+  }
+
+  .hero-slide.is-active {
+    transform: none;
+    transition: opacity 200ms linear, visibility 0s;
+  }
+
+  .hero-tick.is-active .hero-tick__fill {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
 /* Gold frame that breathes inward on hover (hero/featured imagery) */
 .frame-gold {
   position: relative;
