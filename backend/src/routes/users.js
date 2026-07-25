@@ -16,6 +16,9 @@ const { PERMISSION_KEYS, ROLE_DEFAULTS, effectivePermissions } = require('../con
 const logger = require('../utils/logger');
 
 const STAFF_ROLES = ['author', 'editor', 'admin', 'super_admin'];
+// Roles that may appear publicly as a byline / on the writers page.
+// The super-admin (المدير الأعلى) is an operator account, never a public author.
+const PUBLIC_AUTHOR_ROLES = ['author', 'editor', 'admin'];
 
 // Attach effective permissions to a lean user object
 const withPermissions = (user) => ({
@@ -51,7 +54,7 @@ router.get('/by-slug/:slug', async (req, res, next) => {
         { name: { $regex: new RegExp(nameSearch, 'i') } },
       ],
       isActive: true,
-      role: { $in: STAFF_ROLES },
+      role: { $in: PUBLIC_AUTHOR_ROLES },
     }).select('name bio avatar role jobTitle socialLinks createdAt').lean();
     if (!user) return errors.notFound(res, 'الكاتب');
     return success(res, user);
@@ -66,7 +69,7 @@ router.get('/authors', async (req, res, next) => {
       { $group: { _id: '$author', articlesCount: { $sum: 1 }, latestAt: { $max: '$publishedAt' } } },
     ]);
     const byId = new Map(counts.filter((c) => c._id).map((c) => [String(c._id), c]));
-    const users = await User.find({ _id: { $in: [...byId.keys()] }, isActive: true })
+    const users = await User.find({ _id: { $in: [...byId.keys()] }, isActive: true, role: { $in: PUBLIC_AUTHOR_ROLES } })
       .select('name slug bio avatar jobTitle')
       .lean();
     const authors = users
