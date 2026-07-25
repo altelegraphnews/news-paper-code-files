@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { ingestSubmission } = require('../services/submissionService');
 const resend = require('../services/resendService');
+const { submissionAck } = require('../services/emailTemplates');
 const { success, errors } = require('../utils/responseHelper');
 const config = require('../config/env');
 const logger = require('../utils/logger');
@@ -76,6 +77,18 @@ const forwardToInbox = async ({ email, fromEmail, fromName, attachments, article
   logger.info(`↪︎ Forwarded submission "${article.title}" to ${to}`);
 };
 
+// Send the branded Arabic acknowledgement back to the writer. Guarded so we
+// never reply to our own domain addresses (avoids mail loops).
+const sendAcknowledgement = async ({ fromEmail, fromName, article }) => {
+  if (!config.submissions.ackEnabled) return;
+  if (!fromEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromEmail)) return;
+  if (/@al-telegraph\.com$/i.test(fromEmail)) return; // don't ack our own sends
+
+  const { subject, html } = submissionAck({ senderName: fromName, title: article.title });
+  await resend.sendEmail({ from: config.submissions.ackFrom, to: fromEmail, subject, html });
+  logger.info(`↩︎ Sent acknowledgement to ${fromEmail}`);
+};
+
 /**
  * POST /submissions/inbound
  * Resend "email.received" webhook. Verifies signature, pulls the full email +
@@ -146,6 +159,11 @@ const inboundWebhook = async (req, res, next) => {
     // Forward a copy to the configured inbox (e.g. Gmail) — best effort
     await forwardToInbox({ email, fromEmail, fromName, attachments, article }).catch((e) =>
       logger.warn('Submission forward failed:', e.message)
+    );
+
+    // Auto-reply to the writer confirming receipt — best effort
+    await sendAcknowledgement({ fromEmail, fromName, article }).catch((e) =>
+      logger.warn('Submission ack failed:', e.message)
     );
 
     return success(res, { ok: true, articleId: article._id, title: article.title });

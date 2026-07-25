@@ -82,6 +82,9 @@ const config = {
     forwardTo: process.env.SUBMISSIONS_FORWARD_TO || '',
     // Verified sender the forwarded copy is sent "from"
     forwardFrom: process.env.SUBMISSIONS_FORWARD_FROM || 'التلغراف — مساهمات <submissions@al-telegraph.com>',
+    // Auto-reply (acknowledgement) sent back to the writer
+    ackEnabled: process.env.SUBMISSIONS_ACK !== 'false',
+    ackFrom: process.env.SUBMISSIONS_ACK_FROM || 'مجلّة التلغراف <submissions@al-telegraph.com>',
   },
 
   frontend: {
