@@ -70,7 +70,15 @@ const getDefaultCategory = async () => {
   const slug = config.submissions.defaultCategorySlug;
   let cat = await Category.findOne({ slug });
   if (!cat) {
-    cat = await Category.create({ name: 'مساهمات', slug, description: 'مقالات وردت عبر البريد بانتظار المراجعة' });
+    // Internal holding bin — hidden from the public nav; editors recategorize
+    cat = await Category.create({
+      name: 'مساهمات',
+      slug,
+      description: 'مقالات واردة بانتظار المراجعة',
+      showInNav: false,
+      isActive: false,
+      order: 99,
+    });
     logger.info(`Created default submissions category "${slug}"`);
   }
   return cat;

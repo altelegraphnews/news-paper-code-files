@@ -167,15 +167,25 @@ export const fetchTagArticles = async (
   return response.data.data;
 };
 
-// Search
+// Search — the API returns `data` as an Article[] plus `meta.pagination`,
+// so assemble the SearchResult the app expects.
 export const searchArticles = async (
   query: string,
   params?: { page?: number; limit?: number; category?: string }
 ): Promise<SearchResult> => {
-  const response = await apiClient.get<ApiResponse<SearchResult>>('/search', {
+  const response = await apiClient.get<ApiResponse<Article[]>>('/search', {
     params: { q: query, ...params },
   });
-  return response.data.data;
+  const articles = response.data.data || [];
+  const pg = (response.data as { meta?: { pagination?: Record<string, number> } }).meta?.pagination || {};
+  return {
+    articles,
+    total: pg.total ?? articles.length,
+    page: pg.page ?? params?.page ?? 1,
+    limit: pg.limit ?? params?.limit ?? articles.length,
+    totalPages: pg.totalPages ?? 1,
+    query,
+  };
 };
 
 // Tickers

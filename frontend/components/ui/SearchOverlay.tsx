@@ -131,7 +131,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               {previewResults.map((article) => (
                 <Link
                   key={article._id}
-                  href={`/article/${article.category.slug}/${article.slug}`}
+                  href={`/article/${article.category?.slug || 'uncategorized'}/${article.slug}`}
                   onClick={onClose}
                   className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
                 >
@@ -145,7 +145,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <CategoryBadge name={article.category.name} className="mb-1" />
+                    {article.category?.name && <CategoryBadge name={article.category.name} className="mb-1" />}
                     <h4 className="font-heading font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 group-hover:text-primary dark:group-hover:text-accent transition-colors">
                       {article.title}
                     </h4>

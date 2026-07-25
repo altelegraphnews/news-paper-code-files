@@ -45,7 +45,7 @@ export function useSearch(debounceMs = 300): UseSearchReturn {
     try {
       const data = await searchArticles(q.trim(), { page, limit: 10 });
       setFullResults(data);
-      setResults(data.articles);
+      setResults(data.articles || []);
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setIsError(true);
@@ -123,7 +123,7 @@ export function useInstantSearch(debounceMs = 300) {
   return {
     query,
     setQuery,
-    previewResults: results.slice(0, 5),
+    previewResults: (results || []).slice(0, 5),
     isLoading,
     clearSearch,
   };
