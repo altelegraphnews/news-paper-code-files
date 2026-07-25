@@ -34,3 +34,6 @@ coverage/
 # ───────── Stray / generated artifacts ─────────
 .railway-config-pull-*/
 backend/scripts/real-content/dry-run-output.html
+
+# TypeScript incremental build cache
+*.tsbuildinfo
