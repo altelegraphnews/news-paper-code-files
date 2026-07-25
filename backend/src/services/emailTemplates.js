@@ -69,7 +69,7 @@ const submissionAck = ({ senderName, title } = {}) => {
     <h1 style="font-family:'Amiri',Georgia,serif;font-size:25px;font-weight:700;color:${C.ink};margin:0 0 22px;line-height:1.5;">تسلَّمنا مساهمتكم بكلّ تقدير</h1>
     ${p(salutation)}
     ${p(`يسرُّ هيئةَ تحرير مجلّة التلغراف أن تؤكّد لكم ${worked}`)}
-    ${p('نقرأ ما يصلنا بعنايةٍ وأناة، ونُعلمكم بقرار النشر خلال مدّةٍ أقصاها أربعةُ أسابيع من تاريخ هذه الرسالة.')}
+    ${p('نقرأ ما يصلنا بعنايةٍ وأناة، ونُعلمكم بقرار النشر خلال مدّةٍ تتراوح بين يومٍ وأربعة أيامٍ من تاريخ هذه الرسالة.')}
     ${p('نشكر لكم ثقتكم بالتلغراف، واختياركم إيّاه منبراً لكلمتكم.')}
     <div style="margin-top:26px;padding-top:18px;border-top:1px solid ${C.border};">
       <div style="font-family:'Amiri',Georgia,serif;font-size:16px;font-weight:700;color:${C.ink};">هيئة التحرير</div>

@@ -76,7 +76,7 @@ export default function SubmitForm() {
         <p className="font-body leading-loose text-sm" style={{ color: 'var(--color-text-secondary)' }}>
           وصلَتْنا مساهمتك، وستصلك رسالةٌ على بريدك تؤكّد الاستلام.
           <br />
-          تُعلمك هيئة التحرير بقرارها خلال أربعة أسابيع.
+          تُعلمك هيئة التحرير بقرارها خلال يومٍ إلى أربعة أيام.
         </p>
         <button
           type="button"
@@ -168,7 +168,7 @@ export default function SubmitForm() {
 
       <div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
         <p className="text-xs font-body" style={{ color: 'var(--color-text-muted)' }}>
-          بإرسالك المقال تُقرّ بأنه من تأليفك وغير منشور سابقاً.
+          بإرسالك المقال تُقرّ بأنه من تأليفك.
         </p>
         <button
           type="submit"
