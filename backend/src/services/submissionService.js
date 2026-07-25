@@ -190,6 +190,9 @@ const ingestSubmission = async (p) => {
   const { authorId, matched } = await resolveAuthor(p.fromEmail, systemUser);
   const cover = uploadedImages[0];
 
+  const via = p.via === 'form' ? 'form' : 'email';
+  const sourceLabel = via === 'form' ? 'نموذج الموقع' : 'بريد إلكتروني';
+
   const article = await Article.create({
     title: title.trim(),
     slug,
@@ -202,9 +205,9 @@ const ingestSubmission = async (p) => {
     review: { submittedAt: new Date() },
     readingTimeMin: calculateReadingTime(content),
     ogImage: cover ? { url: cover.url, publicId: cover.publicId } : {},
-    source: { name: `بريد إلكتروني — ${p.fromEmail || ''}`.trim() },
+    source: { name: `${sourceLabel} — ${p.fromEmail || ''}`.trim() },
     submission: {
-      via: 'email',
+      via,
       senderEmail: p.fromEmail,
       senderName: p.fromName,
       resendEmailId: p.resendEmailId,

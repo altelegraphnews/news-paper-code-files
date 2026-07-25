@@ -175,6 +175,49 @@ const inboundWebhook = async (req, res, next) => {
 };
 
 /**
+ * POST /submissions/form  (public, rate-limited)
+ * On-site submission form. Accepts name/email/title/body + optional .docx and
+ * images (multipart), creates a pending article, acks the writer, and forwards
+ * a copy if configured.
+ */
+const formSubmit = async (req, res, next) => {
+  try {
+    // Honeypot: real users never fill the hidden "website" field
+    if (req.body.website) return success(res, { ok: true });
+
+    const name = (req.body.name || '').trim();
+    const email = (req.body.email || '').trim();
+    const title = (req.body.title || '').trim();
+    const body = (req.body.body || '').trim();
+
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return errors.badRequest(res, 'يرجى إدخال بريد إلكتروني صحيح');
+    }
+    const files = req.files || {};
+    const docxFile = (files.docx || [])[0];
+    const imageFiles = files.images || [];
+    if (!title && !body && !docxFile) {
+      return errors.badRequest(res, 'يرجى كتابة المقال أو إرفاق ملف Word');
+    }
+
+    const attachments = [];
+    if (docxFile) attachments.push({ filename: docxFile.originalname || 'article.docx', contentType: docxFile.mimetype, buffer: docxFile.buffer });
+    for (const img of imageFiles) attachments.push({ filename: img.originalname, contentType: img.mimetype, buffer: img.buffer });
+
+    const article = await ingestSubmission({
+      via: 'form', fromEmail: email, fromName: name, subject: title, text: body, attachments,
+    });
+
+    await forwardToInbox({ email: { subject: title, text: body, html: '' }, fromEmail: email, fromName: name, attachments, article })
+      .catch((e) => logger.warn('Form submission forward failed:', e.message));
+    await sendAcknowledgement({ fromEmail: email, fromName: name, article })
+      .catch((e) => logger.warn('Form submission ack failed:', e.message));
+
+    return success(res, { ok: true, title: article.title }, 'تم استلام مقالك بنجاح');
+  } catch (err) { next(err); }
+};
+
+/**
  * POST /submissions/test-ingest  (auth: articles.publish)
  * Manually create a pending article from a text/subject payload — for testing
  * the pipeline without sending a real email.
@@ -188,4 +231,4 @@ const testIngest = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { inboundWebhook, testIngest, verifySignature, parseFrom };
+module.exports = { inboundWebhook, formSubmit, testIngest, verifySignature, parseFrom };

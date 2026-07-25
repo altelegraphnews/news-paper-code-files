@@ -118,6 +118,16 @@ const searchLimiter = createLimiter({
   keyPrefix: 'search',
 });
 
+/**
+ * Public submission form: 5 per hour per IP (spam brake)
+ */
+const submissionLimiter = createLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: 'لقد تجاوزت الحدّ المسموح لإرسال المساهمات، يرجى المحاولة لاحقاً',
+  keyPrefix: 'submission',
+});
+
 module.exports = {
   publicLimiter,
   authLimiter,
@@ -125,4 +135,5 @@ module.exports = {
   passwordResetLimiter,
   uploadLimiter,
   searchLimiter,
+  submissionLimiter,
 };

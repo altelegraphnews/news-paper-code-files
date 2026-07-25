@@ -183,9 +183,9 @@ const articleSchema = new mongoose.Schema(
       name: String,
       url: String,
     },
-    // Set when the article was created from an inbound email submission
+    // Set when the article was created from a reader submission
     submission: {
-      via: { type: String, enum: ['email'] },
+      via: { type: String, enum: ['email', 'form'] },
       senderEmail: String,
       senderName: String,
       resendEmailId: String,

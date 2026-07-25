@@ -137,11 +137,11 @@ export default function ReviewQueue() {
                       {article.excerpt && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{article.excerpt}</p>
                       )}
-                      {article.submission?.via === 'email' && (
+                      {(article.submission?.via === 'email' || article.submission?.via === 'form') && (
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <Badge variant="info" className="text-[11px]">
                             <Mail className="w-3 h-3 ml-1" />
-                            وصل عبر البريد
+                            {article.submission.via === 'form' ? 'أُرسل عبر الموقع' : 'وصل عبر البريد'}
                           </Badge>
                           {article.submission.hadDocx && (
                             <span className="inline-flex items-center gap-1 text-[11px] text-gray-400">
