@@ -448,9 +448,15 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Entrance animations use `backwards`, never `both`: a transform keyframe that
+   keeps filling after the animation ends leaves an identity matrix on the
+   element, which makes it the containing block for any `position: fixed`
+   descendant (modals) and traps their z-index in a new stacking context.
+   `backwards` still suppresses the pre-animation flash. */
+
 /* Staggered page-load rise (mirrors the frontend .rise system) */
 .rise {
-  animation: rise-in 0.7s var(--ease-out-soft) both;
+  animation: rise-in 0.7s var(--ease-out-soft) backwards;
 }
 .rise-1 { animation-delay: 60ms; }
 .rise-2 { animation-delay: 140ms; }
@@ -465,7 +471,7 @@
 
 /* Route transition — applied to the page container on every navigation */
 .page-enter {
-  animation: page-enter 0.35s var(--ease-out-soft) both;
+  animation: page-enter 0.35s var(--ease-out-soft) backwards;
 }
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(10px); }
@@ -474,7 +480,7 @@
 
 /* Modal entrance */
 .modal-enter {
-  animation: modal-in 0.25s var(--ease-out-soft) both;
+  animation: modal-in 0.25s var(--ease-out-soft) backwards;
 }
 @keyframes modal-in {
   from { opacity: 0; transform: translateY(14px) scale(0.98); }

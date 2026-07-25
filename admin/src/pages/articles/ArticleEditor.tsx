@@ -4,7 +4,7 @@ import { articlesApi } from '../../api/articles'
 import { categoriesApi, type Category } from '../../api/categories'
 import { mediaApi } from '../../api/media'
 import { usersApi } from '../../api/users'
-import RichEditor from '../../components/editor/RichEditor'
+import RichEditor, { type RichEditorHandle } from '../../components/editor/RichEditor'
 import QuickWriterModal, { type QuickWriter } from '../../components/users/QuickWriterModal'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
@@ -16,7 +16,7 @@ import { clsx } from 'clsx'
 import {
   Save, Send, Clock, Eye, ChevronDown, ChevronUp,
   Image as ImageIcon, X, AlertCircle, CheckCircle,
-  Tag, ClipboardCheck, XCircle, UserPlus,
+  Tag, ClipboardCheck, XCircle, UserPlus, Upload, RefreshCw,
 } from 'lucide-react'
 
 interface ArticleForm {
@@ -158,6 +158,7 @@ export default function ArticleEditor() {
   const canFeature = can('articles.feature')
   const canAssignAuthor = can('articles.editAll')
   const canManageUsers = can('users.manage')
+  const canUploadMedia = can('media.upload')
 
   const [form, setForm] = useState<ArticleForm>(EMPTY_FORM)
   const [categories, setCategories] = useState<Category[]>([])
@@ -175,9 +176,15 @@ export default function ArticleEditor() {
   const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [mediaAssets, setMediaAssets] = useState<any[]>([])
   const [mediaLoading, setMediaLoading] = useState(false)
+  const [mediaError, setMediaError] = useState('')
+  const [mediaUploading, setMediaUploading] = useState(false)
+  const [mediaUploadPct, setMediaUploadPct] = useState(0)
+  const [mediaDragging, setMediaDragging] = useState(false)
   const [showQuickWriter, setShowQuickWriter] = useState(false)
   const [mediaTarget, setMediaTarget] = useState<'featured' | 'content'>('featured')
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const editorRef = useRef<RichEditorHandle>(null)
+  const mediaFileInput = useRef<HTMLInputElement>(null)
 
   const set = useCallback((patch: Partial<ArticleForm>) => {
     setForm((prev) => ({ ...prev, ...patch }))
@@ -426,29 +433,72 @@ export default function ArticleEditor() {
     set({ tags: form.tags.filter((t) => t !== tag) })
   }
 
+  const loadMedia = useCallback(() => {
+    setMediaLoading(true)
+    setMediaError('')
+    mediaApi.list({ limit: 100 })
+      .then((res) => {
+        const data = res.data?.data
+        setMediaAssets(data?.resources || (Array.isArray(data) ? data : []))
+      })
+      .catch((err: any) => {
+        setMediaError(err?.response?.data?.message || 'تعذّر تحميل مكتبة الوسائط')
+      })
+      .finally(() => setMediaLoading(false))
+  }, [])
+
   const openMediaPicker = (target: 'featured' | 'content') => {
     setMediaTarget(target)
     setShowMediaPicker(true)
-    if (mediaAssets.length === 0) {
-      setMediaLoading(true)
-      mediaApi.list().then((res) => {
-        setMediaAssets(res.data?.data?.resources || [])
-      }).catch(() => {}).finally(() => setMediaLoading(false))
-    }
+    loadMedia()
   }
 
   const selectMedia = (asset: any) => {
+    const url = asset?.secure_url || asset?.url
+    if (!url) { toast.error('تعذّر قراءة رابط الصورة'); return }
+
     if (mediaTarget === 'featured') {
       set({
         ogImage: {
-          url: asset.secure_url || asset.url,
+          url,
           alt: form.ogImage.alt || form.title,
           caption: form.ogImage.caption || '',
-          publicId: asset.public_id,
+          publicId: asset.public_id || '',
         },
       })
+    } else {
+      // Drop it into the article body at the caret the writer left behind.
+      editorRef.current?.insertImage({ src: url, alt: form.title || '' })
+      toast.success('أُدرجت الصورة في المقال')
     }
     setShowMediaPicker(false)
+  }
+
+  // Upload straight from the picker — a fresh library would otherwise be empty
+  // with no way to add a picture without leaving the article.
+  const uploadMedia = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('يرجى اختيار ملف صورة')
+      return
+    }
+    setMediaUploading(true)
+    setMediaUploadPct(0)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'alwid/articles')
+      const res = await mediaApi.upload(formData, setMediaUploadPct)
+      const asset = res.data?.data
+      if (!asset) throw new Error('empty response')
+      setMediaAssets((prev) => [asset, ...prev])
+      setMediaError('')
+      selectMedia(asset)
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'فشل في رفع الصورة')
+    } finally {
+      setMediaUploading(false)
+      setMediaUploadPct(0)
+    }
   }
 
   const parentCategories = categories.filter((c) => !c.parentId)
@@ -677,6 +727,7 @@ export default function ArticleEditor() {
 
           {/* Content editor */}
           <RichEditor
+            ref={editorRef}
             value={form.content}
             onChange={(html) => set({ content: html })}
             placeholder="ابدأ كتابة المقال هنا..."
@@ -999,23 +1050,96 @@ export default function ArticleEditor() {
       <Modal
         isOpen={showMediaPicker}
         onClose={() => setShowMediaPicker(false)}
-        title="مكتبة الوسائط"
-        size="lg"
+        title={mediaTarget === 'featured' ? 'اختر الصورة المميزة' : 'أدرج صورة في المقال'}
+        size="2xl"
       >
-        <div>
-          {mediaLoading ? (
-            <div className="grid grid-cols-4 gap-3">
+        <div
+          onDragOver={(e) => { if (canUploadMedia) { e.preventDefault(); setMediaDragging(true) } }}
+          onDragLeave={() => setMediaDragging(false)}
+          onDrop={(e) => {
+            if (!canUploadMedia) return
+            e.preventDefault()
+            setMediaDragging(false)
+            const file = e.dataTransfer.files?.[0]
+            if (file) uploadMedia(file)
+          }}
+          className={clsx(
+            'space-y-3 rounded-md transition-colors',
+            mediaDragging && 'ring-2 ring-gold-500 ring-offset-2 dark:ring-offset-gray-800'
+          )}
+        >
+          {/* Upload / refresh bar */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <p className="text-xs text-gray-400">
+              {mediaTarget === 'featured'
+                ? 'اضغط على صورة لجعلها الصورة المميزة للمقال.'
+                : 'اضغط على صورة لإدراجها في مكان المؤشر داخل المقال.'}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={loadMedia}
+                disabled={mediaLoading}
+                title="تحديث"
+                className="p-1.5 rounded-md text-gray-400 hover:text-gold-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-40"
+              >
+                <RefreshCw className={clsx('w-4 h-4', mediaLoading && 'animate-spin')} />
+              </button>
+              {canUploadMedia && (
+                <Button
+                  variant="gold"
+                  size="sm"
+                  onClick={() => mediaFileInput.current?.click()}
+                  isLoading={mediaUploading}
+                  leftIcon={<Upload className="w-4 h-4" />}
+                >
+                  رفع صورة
+                </Button>
+              )}
+              <input
+                ref={mediaFileInput}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  if (file) uploadMedia(file)
+                }}
+              />
+            </div>
+          </div>
+
+          {mediaUploading && (
+            <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-1.5">
+              <div className="h-1.5 bg-gold-500 rounded-full transition-all" style={{ width: `${mediaUploadPct}%` }} />
+            </div>
+          )}
+
+          {mediaError && (
+            <div className="flex items-start gap-2 p-3 rounded-md bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{mediaError}</span>
+            </div>
+          )}
+
+          {mediaLoading && mediaAssets.length === 0 ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="aspect-square rounded-md bg-gray-100 dark:bg-gray-700 animate-pulse" />
               ))}
             </div>
           ) : mediaAssets.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">لا توجد صور في المكتبة</div>
+            <div className="text-center py-10 text-gray-400 text-sm">
+              <ImageIcon className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p>لا توجد صور في المكتبة</p>
+              {canUploadMedia && <p className="mt-1 text-xs">ارفع صورة أو أفلتها هنا.</p>}
+            </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto p-0.5">
               {mediaAssets.map((asset) => (
                 <button
-                  key={asset.public_id}
+                  key={asset.public_id || asset.secure_url || asset.url}
                   type="button"
                   onClick={() => selectMedia(asset)}
                   className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-gold-500 transition-colors focus:outline-none focus:border-gold-500"

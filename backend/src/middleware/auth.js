@@ -132,6 +132,24 @@ const requirePermission = (...keys) => {
 };
 
 /**
+ * Granular permission check where ANY one of the keys is enough.
+ * Usage: requireAnyPermission('media.manage', 'media.upload')
+ */
+const requireAnyPermission = (...keys) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return errors.unauthorized(res);
+    }
+
+    if (!keys.some((key) => req.user.can(key))) {
+      return errors.forbidden(res, 'ليس لديك الصلاحية الكافية للقيام بهذا الإجراء');
+    }
+
+    next();
+  };
+};
+
+/**
  * Optional auth - sets req.user if valid token present, does not fail if not
  */
 const optionalAuth = async (req, res, next) => {
@@ -240,6 +258,7 @@ module.exports = {
   requireRole,
   requireAtLeast,
   requirePermission,
+  requireAnyPermission,
   optionalAuth,
   requireOwnership,
   generateAccessToken,

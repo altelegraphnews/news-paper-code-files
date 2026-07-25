@@ -1,4 +1,5 @@
 import { ReactNode, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
 import { X } from 'lucide-react'
 
@@ -42,7 +43,12 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer, c
 
   if (!isOpen) return null
 
-  return (
+  // Rendered through a portal on <body>: inside the page tree an ancestor with a
+  // transform (the route entrance animation) becomes the containing block for
+  // `position: fixed`, which pushed dialogs far down long pages instead of
+  // centring them in the viewport. The dark-mode class lives on <html>, so
+  // theming still applies here.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
       {/* Backdrop */}
       <div
@@ -90,6 +96,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer, c
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

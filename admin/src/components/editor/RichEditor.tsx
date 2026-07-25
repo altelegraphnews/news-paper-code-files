@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { forwardRef, useEffect, useCallback, useImperativeHandle } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -26,6 +26,12 @@ interface RichEditorProps {
   onChange: (html: string) => void
   placeholder?: string
   onImageInsert?: () => void
+}
+
+/** Imperative handle so the page can drop a picked image at the caret. */
+export interface RichEditorHandle {
+  insertImage: (image: { src: string; alt?: string; title?: string }) => void
+  focus: () => void
 }
 
 function ToolbarButton({
@@ -60,7 +66,10 @@ function Divider() {
   return <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-0.5 flex-shrink-0" />
 }
 
-export default function RichEditor({ value, onChange, placeholder, onImageInsert }: RichEditorProps) {
+const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEditor(
+  { value, onChange, placeholder, onImageInsert },
+  ref
+) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -122,6 +131,23 @@ export default function RichEditor({ value, onChange, placeholder, onImageInsert
     if (!editor) return
     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
   }, [editor])
+
+  useImperativeHandle(ref, () => ({
+    insertImage: ({ src, alt, title }) => {
+      if (!editor || !src) return
+      // `focus()` first so the image lands at the caret the writer left behind
+      // when they opened the media picker, not at the top of the document.
+      editor.chain().focus().setImage({ src, alt, title }).run()
+
+      // An image as the very last node leaves nowhere to keep typing — give it
+      // a trailing paragraph and park the caret there.
+      const { doc } = editor.state
+      if (doc.lastChild?.type.name === 'image') {
+        editor.chain().insertContentAt(doc.content.size, { type: 'paragraph' }).focus('end').run()
+      }
+    },
+    focus: () => { editor?.commands.focus() },
+  }), [editor])
 
   if (!editor) return null
 
@@ -297,4 +323,6 @@ export default function RichEditor({ value, onChange, placeholder, onImageInsert
       </div>
     </div>
   )
-}
+})
+
+export default RichEditor

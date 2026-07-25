@@ -12,7 +12,7 @@ const {
   listAssets,
 } = require('../services/cloudinaryService');
 const { success, errors } = require('../utils/responseHelper');
-const { verifyToken, requireAtLeast, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireAtLeast, requirePermission, requireAnyPermission } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { logAction } = require('../middleware/auditLogger');
 
@@ -26,8 +26,10 @@ const upload = multer({
   },
 });
 
-// GET /media — list Cloudinary assets
-router.get('/', verifyToken, requirePermission('media.manage'), async (req, res, next) => {
+// GET /media — list Cloudinary assets.
+// Browsing is allowed for anyone who may upload: writers (media.upload only)
+// need to pick a cover or an in-article image without the media library page.
+router.get('/', verifyToken, requireAnyPermission('media.manage', 'media.upload'), async (req, res, next) => {
   try {
     const { folder = 'alwid', limit = 50, cursor } = req.query;
     const result = await listAssets({ folder, maxResults: parseInt(limit), nextCursor: cursor });

@@ -107,7 +107,7 @@ export default {
         'fade-in':    'fadeIn 0.2s ease-in-out',
         'slide-in':   'slideIn 0.2s ease-in-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'rise':       'riseIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'rise':       'riseIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards',
       },
       keyframes: {
         fadeIn: {
