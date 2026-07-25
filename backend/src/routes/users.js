@@ -128,6 +128,20 @@ router.get('/', verifyToken, requirePermission('users.manage'), async (req, res,
       User.countDocuments(filter),
     ]);
 
+    // Live article count (author or co-author, not deleted) — the stored
+    // articlesCount field drifts when an article is reassigned, so compute it
+    // fresh and matching what the delete guard checks.
+    const ids = users.map((u) => u._id);
+    const counts = await Article.aggregate([
+      { $match: { isDeleted: { $ne: true }, $or: [{ author: { $in: ids } }, { coAuthors: { $in: ids } }] } },
+      { $project: { contributors: { $setUnion: [['$author'], { $ifNull: ['$coAuthors', []] }] } } },
+      { $unwind: '$contributors' },
+      { $match: { contributors: { $in: ids } } },
+      { $group: { _id: '$contributors', c: { $sum: 1 } } },
+    ]);
+    const countMap = new Map(counts.map((x) => [String(x._id), x.c]));
+    users.forEach((u) => { u.articlesCount = countMap.get(String(u._id)) || 0; });
+
     return paginated(res, users.map(withPermissions), { page: pageNum, limit: limitNum, total });
   } catch (err) { next(err); }
 });
@@ -141,6 +155,10 @@ router.get('/:id', verifyToken, requirePermission('users.manage'), validate([
       .select('-password -refreshTokens -twoFactorSecret -passwordResetToken')
       .lean();
     if (!user) return errors.notFound(res, 'المستخدم');
+    user.articlesCount = await Article.countDocuments({
+      $or: [{ author: user._id }, { coAuthors: user._id }],
+      isDeleted: { $ne: true },
+    });
     return success(res, withPermissions(user));
   } catch (err) { next(err); }
 });
