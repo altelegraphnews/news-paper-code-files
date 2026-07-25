@@ -5,7 +5,7 @@ import { API_URL } from '@/lib/api';
 import { buildNavLinks, STATIC_NAV_LINKS } from '@/lib/nav';
 
 async function getNavCategoriesCached() {
-  const res = await fetch(`${API_URL}/categories/nav`, { next: { revalidate: 600 } });
+  const res = await fetch(`${API_URL}/categories/nav`, { next: { revalidate: 600, tags: ['nav'] } });
   if (!res.ok) throw new Error('nav fetch failed');
   return (await res.json()).data || [];
 }

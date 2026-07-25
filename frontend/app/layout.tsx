@@ -15,7 +15,7 @@ import './globals.css';
 // result instead of re-hitting the backend.
 async function getNavCategoriesCached() {
   try {
-    const res = await fetch(`${API_URL}/categories/nav`, { next: { revalidate: 600 } });
+    const res = await fetch(`${API_URL}/categories/nav`, { next: { revalidate: 600, tags: ['nav'] } });
     if (!res.ok) return [];
     const json = await res.json();
     return json.data || [];

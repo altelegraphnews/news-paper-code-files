@@ -6,6 +6,20 @@ const { success, created, errors } = require('../utils/responseHelper');
 const { generateSlug } = require('../utils/slugGenerator');
 const { logAction } = require('../middleware/auditLogger');
 const { cacheDelPattern } = require('../config/redis');
+const config = require('../config/env');
+const logger = require('../utils/logger');
+
+/**
+ * Ask the frontend to drop its cached nav (ISR) so category changes — order,
+ * name, add/remove — appear on the site immediately. Best-effort.
+ */
+const triggerNavRevalidate = () => {
+  const { revalidateSecret } = config;
+  const base = config.frontend.url;
+  if (!revalidateSecret || !base) return;
+  fetch(`${base}/api/revalidate?secret=${encodeURIComponent(revalidateSecret)}&tag=nav`, { method: 'POST' })
+    .catch((err) => logger.warn('Nav revalidate failed:', err.message));
+};
 
 /**
  * GET /categories
@@ -143,6 +157,7 @@ const createCategory = async (req, res, next) => {
 
     await cacheDelPattern('homepage:*');
 
+    triggerNavRevalidate();
     return created(res, category, 'تم إنشاء التصنيف بنجاح');
   } catch (error) {
     next(error);
@@ -192,6 +207,7 @@ const updateCategory = async (req, res, next) => {
 
     await cacheDelPattern('homepage:*');
 
+    triggerNavRevalidate();
     return success(res, category, 'تم تحديث التصنيف بنجاح');
   } catch (error) {
     next(error);
@@ -236,6 +252,7 @@ const deleteCategory = async (req, res, next) => {
 
     await cacheDelPattern('homepage:*');
 
+    triggerNavRevalidate();
     return success(res, null, 'تم حذف التصنيف بنجاح');
   } catch (error) {
     next(error);
@@ -264,6 +281,7 @@ const reorderCategories = async (req, res, next) => {
 
     await Category.bulkWrite(bulkOps);
     await cacheDelPattern('homepage:*');
+    triggerNavRevalidate();
 
     return success(res, null, 'تم تحديث الترتيب بنجاح');
   } catch (error) {

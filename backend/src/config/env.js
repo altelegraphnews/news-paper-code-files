@@ -91,6 +91,9 @@ const config = {
     allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(','),
   },
 
+  // Shared secret for triggering on-demand ISR revalidation on the frontend
+  revalidateSecret: process.env.REVALIDATE_SECRET || '',
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
     publicMax: parseInt(process.env.RATE_LIMIT_PUBLIC_MAX, 10) || 100,
