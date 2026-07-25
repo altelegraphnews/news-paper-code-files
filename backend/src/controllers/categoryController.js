@@ -63,6 +63,7 @@ const getCategory = async (req, res, next) => {
         .skip(skip)
         .limit(limitNum)
         .populate('author', 'name avatar')
+        .populate('category', 'name slug color')
         .select('-content -revisions')
         .lean(),
       Article.countDocuments({

@@ -15,6 +15,20 @@ const articleUrl = (article: Article) =>
   `/article/${article.category?.slug || 'uncategorized'}/${article.slug}`;
 
 /**
+ * Which image represents the article on a card.
+ * Poetry (شعر) leads with the poet, not symbolic artwork: prefer the
+ * author's portrait and fall back to ogImage only when there is none.
+ */
+function cardImage(article: Article): { url?: string; alt?: string } {
+  if (article.category?.slug === 'shir') {
+    const avatar = article.author?.avatar as { url?: string } | string | undefined;
+    const url = typeof avatar === 'string' ? avatar : avatar?.url;
+    if (url) return { url, alt: article.author?.name || article.title };
+  }
+  return { url: article.ogImage?.url, alt: article.ogImage?.alt || article.title };
+}
+
+/**
  * Card thumbnail that never crops the subject: the artwork sits
  * object-contain over a blurred cover-fill of itself, so odd ratios
  * (author portraits, book covers) fill the frame without beheading
@@ -24,7 +38,7 @@ const articleUrl = (article: Article) =>
  * and later badges still stack above.
  */
 function CardThumb({ article, sizes }: { article: Article; sizes: string }) {
-  const img = article.ogImage;
+  const img = cardImage(article);
   if (!img?.url) return null;
   return (
     <>
@@ -125,7 +139,7 @@ export default function ArticleCard({
       <article className={`group overflow-hidden rounded-sm border border-border bg-surface dark:bg-surface-dark dark:border-gray-800 shadow-card hover-lift hover:border-accent/40 ${className}`} style={{ borderColor: 'var(--color-border)' }}>
         <Link href={articleUrl(article)} className="block">
           <div className="relative aspect-[16/9] overflow-hidden" style={{ background: 'var(--color-surface-2)' }}>
-            {article.ogImage?.url ? (
+            {cardImage(article).url ? (
               <CardThumb article={article} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-primary-100 to-accent-100 dark:from-primary-800 dark:to-accent-950" />
@@ -166,7 +180,7 @@ export default function ArticleCard({
       <article className={`group flex gap-3 ${className}`}>
         <Link href={articleUrl(article)} className="flex gap-4 flex-1 items-start">
           <div className="relative w-24 h-20 md:w-32 md:h-24 flex-shrink-0 rounded-sm overflow-hidden ring-1 ring-transparent group-hover:ring-accent/60 transition-[box-shadow] duration-300" style={{ background: 'var(--color-surface-2)' }}>
-            {article.ogImage?.url ? (
+            {cardImage(article).url ? (
               <CardThumb article={article} sizes="128px" />
             ) : (
               <div className="w-full h-full" style={{ background: 'var(--color-surface-2)' }} />
@@ -224,7 +238,7 @@ export default function ArticleCard({
     <article className={`group ${className}`}>
       <Link href={articleUrl(article)} className="block">
         <div className="relative aspect-[16/9] rounded-sm overflow-hidden mb-3 frame-gold" style={{ background: 'var(--color-surface-2)' }}>
-          {article.ogImage?.url ? (
+          {cardImage(article).url ? (
             <CardThumb article={article} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
           ) : (
             <div className="w-full h-full" style={{ background: 'var(--color-surface-2)' }} />
