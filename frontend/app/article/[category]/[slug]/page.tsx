@@ -105,7 +105,7 @@ export default async function ArticlePage({ params }: Props) {
     author: {
       '@type': 'Person',
       name: article.author?.name,
-      url: article.author?.authorSlug ? `${SITE_URL}/author/${article.author.authorSlug}` : undefined,
+      url: article.author?.slug ? `${SITE_URL}/author/${article.author.slug}` : undefined,
     },
     publisher: {
       '@type': 'Organization',
@@ -272,7 +272,7 @@ export default async function ArticlePage({ params }: Props) {
               )}
               <div>
                 <Link
-                  href={`/author/${article.author.authorSlug || article.author._id}`}
+                  href={`/author/${article.author.slug || article.author._id}`}
                   className="font-heading font-bold text-lg text-gray-900 dark:text-gray-100 hover:text-accent transition-colors block mb-1"
                 >
                   {article.author.name}

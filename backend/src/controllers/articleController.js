@@ -81,7 +81,7 @@ const getArticles = async (req, res, next) => {
         .skip(skip)
         .limit(limitNum)
         .populate('category', 'name slug color')
-        .populate('author', 'name avatar')
+        .populate('author', 'name avatar slug')
         .select('-content -revisions')
         .lean(),
       Article.countDocuments(filter),
@@ -110,7 +110,7 @@ const getArticle = async (req, res, next) => {
     const article = await baseQuery
       .populate('category', 'name slug color icon')
       .populate('subcategory', 'name slug')
-      .populate('author', 'name nameEn avatar bio socialLinks')
+      .populate('author', 'name nameEn avatar bio socialLinks slug')
       .populate('coAuthors', 'name avatar')
       .populate('relatedArticles', 'title slug ogImage category publishedAt readingTimeMin')
       .lean();
@@ -266,7 +266,7 @@ const createArticle = async (req, res, next) => {
 
     const populated = await Article.findById(article._id)
       .populate('category', 'name slug')
-      .populate('author', 'name avatar')
+      .populate('author', 'name avatar slug')
       .lean();
 
     return created(res, populated, 'تم إنشاء المقال بنجاح');
@@ -419,7 +419,7 @@ const updateArticle = async (req, res, next) => {
 
     const updated = await Article.findById(article._id)
       .populate('category', 'name slug')
-      .populate('author', 'name avatar')
+      .populate('author', 'name avatar slug')
       .select('-revisions')
       .lean();
 
@@ -767,7 +767,7 @@ const getFeaturedArticles = async (req, res, next) => {
       .sort('-publishedAt')
       .limit(parseInt(limit))
       .populate('category', 'name slug color')
-      .populate('author', 'name avatar')
+      .populate('author', 'name avatar slug')
       .select('-content -revisions')
       .lean();
 

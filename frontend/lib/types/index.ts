@@ -49,7 +49,8 @@ export interface Category {
 export interface Author {
   _id: string;
   name: string;
-  authorSlug: string;
+  slug?: string;
+  jobTitle?: string;
   avatar?: string | { url?: string; publicId?: string };
   bio?: string;
   email?: string;

@@ -13,7 +13,7 @@ interface AuthorCardProps {
 export default function AuthorCard({ author, publishedAt, readingTimeMin, className = '' }: AuthorCardProps) {
   return (
     <div className={`flex items-center gap-4 ${className}`}>
-      <Link href={`/author/${author.authorSlug || author._id}`}>
+      <Link href={`/author/${author.slug || author._id}`}>
         <div className="relative w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex-shrink-0">
           {avatarUrl(author.avatar) ? (
             <Image
@@ -32,7 +32,7 @@ export default function AuthorCard({ author, publishedAt, readingTimeMin, classN
       </Link>
       <div className="flex-1 min-w-0">
         <Link
-          href={`/author/${author.authorSlug || author._id}`}
+          href={`/author/${author.slug || author._id}`}
           className="font-heading font-semibold text-gray-900 dark:text-gray-100 hover:text-accent transition-colors block"
         >
           {author.name}

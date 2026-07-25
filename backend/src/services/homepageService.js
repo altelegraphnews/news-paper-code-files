@@ -26,7 +26,7 @@ const getSiteConfig = async (key) => {
 const withCardFields = (query) =>
   query
     .populate('category', 'name slug color')
-    .populate('author', 'name avatar')
+    .populate('author', 'name avatar slug')
     .select('-content -revisions')
     .lean();
 
@@ -162,7 +162,7 @@ const buildHomepageData = async () => {
       })
         .sort('-publishedAt')
         .limit(4)
-        .populate('author', 'name avatar')
+        .populate('author', 'name avatar slug')
         .select('-content -revisions')
         .lean();
       return { category: cat, articles };

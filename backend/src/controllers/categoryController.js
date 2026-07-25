@@ -76,7 +76,7 @@ const getCategory = async (req, res, next) => {
         .sort('-publishedAt')
         .skip(skip)
         .limit(limitNum)
-        .populate('author', 'name avatar')
+        .populate('author', 'name avatar slug')
         .populate('category', 'name slug color')
         .select('-content -revisions')
         .lean(),

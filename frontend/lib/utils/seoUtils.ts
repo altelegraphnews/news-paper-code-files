@@ -30,7 +30,7 @@ export function getCategoryUrl(category: Category): string {
  * Generate author URL.
  */
 export function getAuthorUrl(author: Author): string {
-  return `${SITE_URL}/author/${author.authorSlug}`;
+  return `${SITE_URL}/author/${author.slug || author._id}`;
 }
 
 /**
