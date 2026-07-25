@@ -74,8 +74,6 @@ const config = {
     webhookSecret: process.env.RESEND_WEBHOOK_SECRET || '',
     // Address writers send to; used only for display/hints
     inboundAddress: process.env.SUBMISSIONS_INBOUND_ADDRESS || 'submit@al-telegraph.com',
-    // Category slug new submissions land in (created if missing)
-    defaultCategorySlug: process.env.SUBMISSIONS_CATEGORY_SLUG || 'musahamat',
     // Skip attachments larger than this (bytes) — safety valve
     maxAttachmentBytes: parseInt(process.env.SUBMISSIONS_MAX_ATTACHMENT_BYTES, 10) || 20 * 1024 * 1024,
     // Optional: forward a copy of every submission to this inbox (e.g. Gmail)

@@ -73,7 +73,9 @@ const articleSchema = new mongoose.Schema(
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
-      required: [true, 'التصنيف مطلوب'],
+      // Reader submissions arrive uncategorized; the editor assigns a real
+      // category during review — required only to go public
+      required: [function () { return ['published', 'scheduled'].includes(this.status); }, 'التصنيف مطلوب'],
     },
     subcategory: {
       type: mongoose.Schema.Types.ObjectId,

@@ -154,6 +154,9 @@ export default function ReviewQueue() {
                           {article.submission.authorMatched === false && (
                             <span className="text-[11px] text-amber-600 dark:text-amber-400">⚠ عيّن الكاتب</span>
                           )}
+                          {!article.category && (
+                            <span className="text-[11px] text-amber-600 dark:text-amber-400">⚠ حدّد التصنيف</span>
+                          )}
                         </div>
                       )}
                     </div>

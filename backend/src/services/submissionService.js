@@ -9,7 +9,6 @@
 
 const mammoth = require('mammoth');
 const Article = require('../models/Article');
-const Category = require('../models/Category');
 const User = require('../models/User');
 const { generateUniqueSlug } = require('../utils/slugGenerator');
 const { calculateReadingTime, sanitizeExcerpt } = require('../utils/readingTime');
@@ -65,25 +64,6 @@ const docxToHtml = async (buffer) => {
   return result.value || '';
 };
 
-// Find (or lazily create) the category new submissions land in
-const getDefaultCategory = async () => {
-  const slug = config.submissions.defaultCategorySlug;
-  let cat = await Category.findOne({ slug });
-  if (!cat) {
-    // Internal holding bin — hidden from the public nav; editors recategorize
-    cat = await Category.create({
-      name: 'مساهمات',
-      slug,
-      description: 'مقالات واردة بانتظار المراجعة',
-      showInNav: false,
-      isActive: false,
-      order: 99,
-    });
-    logger.info(`Created default submissions category "${slug}"`);
-  }
-  return cat;
-};
-
 // A stable, login-disabled system profile used as the placeholder byline /
 // editedBy for submissions whose sender doesn't match a known writer.
 const getSystemUser = async () => {
@@ -128,7 +108,7 @@ const resolveAuthor = async (fromEmail, systemUser) => {
  */
 const ingestSubmission = async (p) => {
   const attachments = p.attachments || [];
-  const [systemUser, defaultCategory] = await Promise.all([getSystemUser(), getDefaultCategory()]);
+  const systemUser = await getSystemUser();
 
   // 1) Upload image attachments → Cloudinary (for cover + inline cid resolution)
   const uploadedImages = [];
@@ -206,7 +186,7 @@ const ingestSubmission = async (p) => {
     slug,
     content,
     excerpt: sanitizeExcerpt(content, 300),
-    category: defaultCategory._id,
+    // No category — the editor assigns one during review (required to publish)
     author: authorId,
     editedBy: systemUser._id,
     status: 'pending',
@@ -225,8 +205,7 @@ const ingestSubmission = async (p) => {
     },
   });
 
-  await Category.incrementArticleCount(defaultCategory._id);
-  logger.info(`📥 Email submission → pending article "${title}" (${article._id}) from ${p.fromEmail || 'unknown'}, matched=${matched}`);
+  logger.info(`📥 Submission → pending article "${title}" (${article._id}) via ${via} from ${p.fromEmail || 'unknown'}, matched=${matched}`);
   return article;
 };
 

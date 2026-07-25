@@ -505,6 +505,10 @@ const publishArticle = async (req, res, next) => {
       return errors.badRequest(res, 'المقال منشور بالفعل');
     }
 
+    if (!article.category) {
+      return errors.badRequest(res, 'حدّد تصنيف المقال قبل النشر — افتح المقال واختر التصنيف المناسب');
+    }
+
     const previousStatus = article.status;
     article.status = 'published';
     article.publishedAt = new Date();
@@ -643,6 +647,10 @@ const approveArticle = async (req, res, next) => {
 
     if (article.status !== 'pending') {
       return errors.badRequest(res, 'المقال ليس بانتظار المراجعة');
+    }
+
+    if (!article.category) {
+      return errors.badRequest(res, 'حدّد تصنيف المقال قبل النشر — افتح المقال واختر التصنيف المناسب');
     }
 
     article.status = 'published';
