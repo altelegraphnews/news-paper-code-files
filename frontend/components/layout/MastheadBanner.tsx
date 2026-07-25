@@ -10,7 +10,8 @@ import Link from 'next/link';
  * for remote assets (see next.config.js), so local /public images go through
  * a bare tag — same as the navbar logo.
  */
-export default function MastheadBanner() {
+export default function MastheadBanner({ imageUrl, enabled = true }: { imageUrl?: string; enabled?: boolean }) {
+  if (!enabled) return null;
   return (
     <div
       className="masthead mt-[var(--ticker-height)] w-full border-b border-accent/40"
@@ -22,7 +23,7 @@ export default function MastheadBanner() {
         className="block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
       >
         <img
-          src="/masthead.jpg"
+          src={imageUrl || '/masthead.jpg'}
           alt="التلغراف — مجلة أدبية وثقافية"
           width={1200}
           height={200}

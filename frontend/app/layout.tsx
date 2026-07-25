@@ -13,6 +13,16 @@ import './globals.css';
 // Nav categories rarely change — fetch via the Next Data Cache (revalidate)
 // instead of an uncached axios call, so every page render reuses the cached
 // result instead of re-hitting the backend.
+async function getSiteSettingsCached() {
+  try {
+    const res = await fetch(`${API_URL}/homepage/settings`, { next: { revalidate: 600, tags: ['site-settings'] } });
+    if (!res.ok) return null;
+    return (await res.json()).data || null;
+  } catch {
+    return null;
+  }
+}
+
 async function getNavCategoriesCached() {
   try {
     const res = await fetch(`${API_URL}/categories/nav`, { next: { revalidate: 600, tags: ['nav'] } });
@@ -138,6 +148,7 @@ export default async function RootLayout({
   // markup on server and client (avoids hydration mismatch). Falls back to
   // static-only links if the backend is unreachable.
   const navCategories = await getNavCategoriesCached();
+  const siteSettings = await getSiteSettingsCached();
 
   return (
     <html
@@ -170,7 +181,7 @@ export default async function RootLayout({
               انتقل إلى المحتوى الرئيسي
             </a>
             <NewsTicker />
-            <MastheadBanner />
+            <MastheadBanner imageUrl={siteSettings?.masthead?.imageUrl} enabled={siteSettings?.masthead?.enabled !== false} />
             <Navbar categories={navCategories} />
             <main id="main-content" className="flex-1">
               {children}

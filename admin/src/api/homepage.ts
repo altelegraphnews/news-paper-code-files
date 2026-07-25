@@ -9,7 +9,23 @@ export interface HomepageSection {
   config?: Record<string, unknown>
 }
 
+export interface HomepageSettings {
+  sections: { key: string; enabled: boolean }[]
+  titles: { featured?: string; latest?: string; mostRead?: string; opinion?: string }
+  mostReadEnabled: boolean
+  newsletter: { kicker?: string; heading?: string; body?: string }
+  categoryRowIds: string[]
+  masthead: { enabled: boolean; imageUrl?: string }
+}
+
 export const homepageApi = {
+  // Layout / text settings
+  getSettings: () =>
+    apiClient.get('/homepage/settings'),
+
+  saveSettings: (settings: HomepageSettings) =>
+    apiClient.put('/homepage/settings', settings),
+
   getSections: () =>
     apiClient.get('/homepage/sections'),
 

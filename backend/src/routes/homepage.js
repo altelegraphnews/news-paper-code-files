@@ -131,4 +131,28 @@ router.post('/invalidate', verifyToken, requirePermission('homepage.manage'), as
   }
 });
 
+// ─── Homepage layout/text settings ──────────────────────────────────────────
+const { mergeHomepageSettings } = require('../config/homepageDefaults');
+const { revalidateFrontend } = require('../utils/revalidate');
+
+// GET /homepage/settings — public (the site's layout reads masthead etc.)
+router.get('/settings', async (req, res, next) => {
+  try {
+    const saved = await getConfig('homepage:settings');
+    return success(res, mergeHomepageSettings(saved));
+  } catch (err) { next(err); }
+});
+
+// PUT /homepage/settings — admin: save layout/text settings
+router.put('/settings', verifyToken, requirePermission('homepage.manage'), async (req, res, next) => {
+  try {
+    const merged = mergeHomepageSettings(req.body || {});
+    await setConfig('homepage:settings', merged);
+    await invalidateCache();
+    // Refresh the site immediately: homepage data + masthead (layout) + nav
+    revalidateFrontend(['homepage', 'site-settings', 'nav'], ['/']);
+    return success(res, merged, 'تم حفظ إعدادات الصفحة الرئيسية');
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

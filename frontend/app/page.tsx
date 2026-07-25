@@ -71,7 +71,7 @@ function Dateline() {
 async function getHomepageData() {
   try {
     const res = await fetch(`${API_URL}/homepage`, {
-      next: { revalidate: 60 },
+      next: { revalidate: 60, tags: ['homepage'] },
       headers: { 'Content-Type': 'application/json' },
     });
     if (!res.ok) throw new Error('Failed to fetch homepage');
@@ -107,7 +107,7 @@ function SectionHeader({ title, href }: { title: string; href?: string }) {
   );
 }
 
-function MostReadSidebar({ articles }: { articles: Article[] }) {
+function MostReadSidebar({ articles, title = 'الأكثر قراءة' }: { articles: Article[]; title?: string }) {
   if (!articles?.length) return null;
   return (
     <aside
@@ -116,7 +116,7 @@ function MostReadSidebar({ articles }: { articles: Article[] }) {
     >
       <div className="flex items-center gap-3 mb-6">
         <h2 className="font-heading font-bold text-xl whitespace-nowrap" style={{ color: 'var(--color-text-primary)' }}>
-          الأكثر قراءة
+          {title}
         </h2>
         <span className="morse-line morse-line--subtle flex-1" aria-hidden="true" />
       </div>
@@ -144,11 +144,11 @@ function MostReadSidebar({ articles }: { articles: Article[] }) {
   );
 }
 
-function OpinionSection({ articles }: { articles: Article[] }) {
+function OpinionSection({ articles, title = 'رأي وتحليل' }: { articles: Article[]; title?: string }) {
   if (!articles?.length) return null;
   return (
     <section className="py-12">
-      <SectionHeader title="رأي وتحليل" href="/opinion" />
+      <SectionHeader title={title} href="/opinion" />
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsFor(articles.length)} gap-6`}>
         {articles.slice(0, 4).map((article: Article, i: number) => (
           <Reveal key={article._id} delay={i * 90}>
@@ -234,7 +234,7 @@ function CategorySection({
   );
 }
 
-function NewsletterSignup() {
+function NewsletterSignup({ kicker, heading, body }: { kicker?: string; heading?: string; body?: string }) {
   return (
     <Reveal as="section" className="newsletter-signup my-14">
       <div className="relative overflow-hidden rounded-sm bg-ink px-8 py-14 md:px-12 md:py-16 text-center">
@@ -254,13 +254,13 @@ function NewsletterSignup() {
         />
 
         <div className="relative">
-          <p className="font-display text-accent-300 text-lg mb-3">برقية أسبوعية</p>
+          {kicker && <p className="font-display text-accent-300 text-lg mb-3">{kicker}</p>}
           <h2 className="font-heading font-bold text-3xl md:text-4xl text-paper mb-4">
-            اشترك في النشرة البريدية
+            {heading || 'اشترك في النشرة البريدية'}
           </h2>
-          <p className="text-paper/65 font-body text-lg mb-8 max-w-xl mx-auto">
-            مختارات من الشعر والسرد والفكر، تصلك كل أسبوع كما تصل البرقيات: قصيرةً ومضيئة.
-          </p>
+          {body && (
+            <p className="text-paper/65 font-body text-lg mb-8 max-w-xl mx-auto">{body}</p>
+          )}
           <NewsletterForm />
         </div>
       </div>
@@ -281,56 +281,59 @@ export default async function HomePage() {
     );
   }
 
-  const { hero, heroSlides, featured = [], latest = [], categoryRows = [], mostRead = [], opinion = [] } = data;
+  const { hero, heroSlides, featured = [], latest = [], categoryRows = [], mostRead = [], opinion = [], settings } = data;
 
   // Older API responses predate the carousel and only send a single `hero`.
   const slides: Article[] = heroSlides?.length ? heroSlides : hero ? [hero] : [];
 
-  return (
-    <div className="container mx-auto px-4 max-w-7xl">
-      <Dateline />
+  const titles = settings?.titles || {};
+  const mostReadEnabled = settings?.mostReadEnabled !== false;
+  const sectionOrder = settings?.sections?.length
+    ? settings.sections
+    : [
+        { key: 'heroFeatured', enabled: true },
+        { key: 'latest', enabled: true },
+        { key: 'categoryRows', enabled: true },
+        { key: 'opinion', enabled: true },
+        { key: 'newsletter', enabled: true },
+      ];
 
-      {/* Hero + Secondary Featured */}
-      <section className="py-7">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Hero */}
-          <div className="lg:col-span-2">
-            {slides.length ? (
-              <HeroCarousel slides={slides} className="h-full min-h-[340px] md:min-h-[480px]" />
-            ) : (
-              <Skeleton className="h-[480px] rounded-sm" />
-            )}
-          </div>
-
-          {/* Secondary featured — rows stretch evenly so the strip's last
-              hairline lands flush with the hero's bottom edge */}
-          <div className="flex flex-col">
-            <div className="flex items-center gap-3 mb-2 rise rise-2">
-              <span className="font-display text-accent-700 dark:text-accent-300 text-base">مختارات</span>
-              <span className="morse-line morse-line--subtle flex-1" aria-hidden="true" />
+  // Each top-level homepage block, keyed so the admin's order/visibility drives
+  // what renders.
+  const blocks: Record<string, React.ReactNode> = {
+    heroFeatured: (
+      <div key="heroFeatured">
+        <section className="py-7">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              {slides.length ? (
+                <HeroCarousel slides={slides} className="h-full min-h-[340px] md:min-h-[480px]" />
+              ) : (
+                <Skeleton className="h-[480px] rounded-sm" />
+              )}
             </div>
-            <div className="flex flex-col flex-1 divide-y divide-[color:var(--color-border)]">
-              {(featured || []).slice(0, 4).map((article: Article, i: number) => (
-                <div
-                  key={article._id}
-                  className={`rise rise-${Math.min(i + 3, 6)} flex-1 flex items-center py-3.5 first:pt-1.5 last:pb-0`}
-                >
-                  <ArticleCard article={article} variant="horizontal" className="w-full" />
-                </div>
-              ))}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3 mb-2 rise rise-2">
+                <span className="font-display text-accent-700 dark:text-accent-300 text-base">{titles.featured || 'مختارات'}</span>
+                <span className="morse-line morse-line--subtle flex-1" aria-hidden="true" />
+              </div>
+              <div className="flex flex-col flex-1 divide-y divide-[color:var(--color-border)]">
+                {(featured || []).slice(0, 4).map((article: Article, i: number) => (
+                  <div key={article._id} className={`rise rise-${Math.min(i + 3, 6)} flex-1 flex items-center py-3.5 first:pt-1.5 last:pb-0`}>
+                    <ArticleCard article={article} variant="horizontal" className="w-full" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Ornamental break */}
-      <div className="ornament-break text-sm py-2" aria-hidden="true">✦</div>
-
-      {/* Main content + Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 py-8">
-        {/* Latest */}
-        <Reveal className="lg:col-span-2">
-          <SectionHeader title="آخر المنشورات" />
+        </section>
+        <div className="ornament-break text-sm py-2" aria-hidden="true">✦</div>
+      </div>
+    ),
+    latest: (
+      <div key="latest" className="grid grid-cols-1 lg:grid-cols-3 gap-10 py-8">
+        <Reveal className={mostReadEnabled ? 'lg:col-span-2' : 'lg:col-span-3'}>
+          <SectionHeader title={titles.latest || 'آخر المنشورات'} />
           <div className="space-y-6 divide-y divide-[color:var(--color-border)]">
             {(latest || []).slice(0, 10).map((article: Article) => (
               <ArticleCard
@@ -350,31 +353,42 @@ export default async function HomePage() {
             </div>
           )}
         </Reveal>
-
-        {/* Sidebar — sticks under the navbar while the latest column scrolls */}
-        <Reveal as="aside" delay={120}>
-          <div className="space-y-6 lg:sticky lg:top-[calc(var(--ticker-height)+var(--navbar-height)+1.25rem)]">
-            <MostReadSidebar articles={mostRead} />
-          </div>
-        </Reveal>
+        {mostReadEnabled && (
+          <Reveal as="aside" delay={120}>
+            <div className="space-y-6 lg:sticky lg:top-[calc(var(--ticker-height)+var(--navbar-height)+1.25rem)]">
+              <MostReadSidebar articles={mostRead} title={titles.mostRead} />
+            </div>
+          </Reveal>
+        )}
       </div>
+    ),
+    categoryRows: (
+      <div key="categoryRows">
+        {(categoryRows || [])
+          .filter(
+            (row: { category: { slug: string }; articles: Article[] }) =>
+              !(opinion?.length && (row.category.slug === 'فكر' || row.category.slug === 'madkhal'))
+          )
+          .map((row: { category: { name: string; slug: string; color?: string }; articles: Article[] }) => (
+            <CategorySection key={row.category.slug} category={row.category} articles={row.articles} />
+          ))}
+      </div>
+    ),
+    opinion: <OpinionSection key="opinion" articles={opinion} title={titles.opinion} />,
+    newsletter: (
+      <NewsletterSignup
+        key="newsletter"
+        kicker={settings?.newsletter?.kicker}
+        heading={settings?.newsletter?.heading}
+        body={settings?.newsletter?.body}
+      />
+    ),
+  };
 
-      {/* Category rows — skip the opinion category here; it gets its own
-          treatment below, and repeating the same articles twice reads sloppy */}
-      {(categoryRows || [])
-        .filter(
-          (row: { category: { slug: string }; articles: Article[] }) =>
-            !(opinion?.length && (row.category.slug === 'فكر' || row.category.slug === 'madkhal'))
-        )
-        .map((row: { category: { name: string; slug: string; color?: string }; articles: Article[] }) => (
-          <CategorySection key={row.category.slug} category={row.category} articles={row.articles} />
-        ))}
-
-      {/* Opinion */}
-      <OpinionSection articles={opinion} />
-
-      {/* Newsletter */}
-      <NewsletterSignup />
+  return (
+    <div className="container mx-auto px-4 max-w-7xl">
+      <Dateline />
+      {sectionOrder.filter((s: { enabled?: boolean }) => s.enabled !== false).map((s: { key: string }) => blocks[s.key])}
     </div>
   );
 }

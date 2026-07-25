@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { articlesApi } from '../../api/articles'
 import { homepageApi } from '../../api/homepage'
+import HomepageSettings from './HomepageSettings'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { useDebounce } from '../../hooks/useDebounce'
@@ -403,6 +404,15 @@ export default function HomepageControl() {
         <p className="text-sm text-blue-700 dark:text-blue-400">
           <strong>ملاحظة:</strong> الصفحة الرئيسية تُخزَّن مؤقتاً لمدة 60 ثانية. بعد أي تغيير، اضغط <strong>مسح الكاش</strong> لتطبيق التغييرات فوراً.
         </p>
+      </div>
+
+      {/* Layout, text & masthead settings */}
+      <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">إعدادات المظهر والنصوص</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          عناوين الأقسام وترتيبها وظهورها، وأقسام التصنيفات على الرئيسية، ونصوص النشرة، ولافتة الاسم.
+        </p>
+        <HomepageSettings />
       </div>
     </div>
   )

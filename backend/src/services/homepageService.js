@@ -5,6 +5,7 @@ const Article = require('../models/Article');
 const Category = require('../models/Category');
 const Ticker = require('../models/Ticker');
 const { getRedisClient, cacheGet, cacheSet } = require('../config/redis');
+const { mergeHomepageSettings } = require('../config/homepageDefaults');
 const logger = require('../utils/logger');
 
 const CACHE_KEY = 'homepage:data';
@@ -35,11 +36,13 @@ const withCardFields = (query) =>
  */
 const buildHomepageData = async () => {
   // Admin-configured hero + featured overrides (fall back to auto-selection).
-  const [heroSlideIdsCfg, heroIdCfg, featuredIdsCfg] = await Promise.all([
+  const [heroSlideIdsCfg, heroIdCfg, featuredIdsCfg, settingsCfg] = await Promise.all([
     getSiteConfig('homepage:heroSlides'),
     getSiteConfig('homepage:hero'),
     getSiteConfig('homepage:featured'),
+    getSiteConfig('homepage:settings'),
   ]);
+  const settings = mergeHomepageSettings(settingsCfg);
 
   // Hero carousel: the admin's ordered list of up to 7 articles. Anything
   // unpublished or deleted since it was picked drops out silently.
@@ -152,7 +155,15 @@ const buildHomepageData = async () => {
   ]);
 
   // Per-category preview rows (3 articles each, for top 5 homepage categories)
-  const homepageCategories = categories.filter((c) => c).slice(0, 6);
+  // Which categories become rows: the admin's chosen/ordered list, else the
+  // first nav categories automatically.
+  let homepageCategories;
+  if (settings.categoryRowIds.length) {
+    const catById = new Map(categories.map((c) => [String(c._id), c]));
+    homepageCategories = settings.categoryRowIds.map((id) => catById.get(String(id))).filter(Boolean);
+  } else {
+    homepageCategories = categories.filter((c) => c).slice(0, 6);
+  }
   const categoryRows = await Promise.all(
     homepageCategories.map(async (cat) => {
       const articles = await Article.find({
@@ -178,7 +189,7 @@ const buildHomepageData = async () => {
     .lean();
 
   // Featured thought/opinion articles (fikr or madkhal section)
-  const fikrCategory = categories.find((c) => c.slug === 'fikr' || c.slug === 'madkhal');
+  const fikrCategory = categories.find((c) => ['فكر', 'fikr', 'madkhal'].includes(c.slug));
   let opinionArticles = [];
   if (fikrCategory) {
     opinionArticles = await Article.find({
@@ -204,6 +215,7 @@ const buildHomepageData = async () => {
     categoryRows,
     mostRead,
     opinion: opinionArticles,
+    settings,
     generatedAt: new Date().toISOString(),
   };
 };
