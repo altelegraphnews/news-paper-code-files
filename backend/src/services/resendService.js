@@ -53,4 +53,32 @@ const downloadAttachment = async (url, maxBytes = config.submissions.maxAttachme
   return buf;
 };
 
-module.exports = { getReceivedEmail, getReceivedAttachments, downloadAttachment };
+// Send an email via Resend (used to forward a copy of submissions to an inbox).
+// attachments: [{ filename, buffer }]
+const sendEmail = async ({ from, to, subject, html, text, replyTo, attachments = [] }) => {
+  const body = {
+    from,
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    ...(html ? { html } : {}),
+    ...(text ? { text } : {}),
+    ...(replyTo ? { reply_to: replyTo } : {}),
+  };
+  if (attachments.length) {
+    body.attachments = attachments
+      .filter((a) => a.buffer)
+      .map((a) => ({ filename: a.filename || 'attachment', content: a.buffer.toString('base64') }));
+  }
+  const res = await fetch(`${API_BASE}/emails`, {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`Resend send → ${res.status} ${t.slice(0, 200)}`);
+  }
+  return res.json();
+};
+
+module.exports = { getReceivedEmail, getReceivedAttachments, downloadAttachment, sendEmail };

@@ -78,10 +78,15 @@ const config = {
     defaultCategorySlug: process.env.SUBMISSIONS_CATEGORY_SLUG || 'musahamat',
     // Skip attachments larger than this (bytes) — safety valve
     maxAttachmentBytes: parseInt(process.env.SUBMISSIONS_MAX_ATTACHMENT_BYTES, 10) || 20 * 1024 * 1024,
+    // Optional: forward a copy of every submission to this inbox (e.g. Gmail)
+    forwardTo: process.env.SUBMISSIONS_FORWARD_TO || '',
+    // Verified sender the forwarded copy is sent "from"
+    forwardFrom: process.env.SUBMISSIONS_FORWARD_FROM || 'التلغراف — مساهمات <submissions@al-telegraph.com>',
   },
 
   frontend: {
     url: process.env.FRONTEND_URL || 'http://localhost:3000',
+    adminUrl: process.env.ADMIN_URL || 'https://admin.al-telegraph.com',
     allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(','),
   },
 

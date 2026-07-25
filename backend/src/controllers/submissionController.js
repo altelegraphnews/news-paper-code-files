@@ -47,6 +47,35 @@ const parseFrom = (from) => {
   return { email: String(from).trim(), name: '' };
 };
 
+// Forward a copy of the submission to the configured inbox (e.g. Gmail), with
+// the original attachments and a link back to the draft. Reply-to is the
+// writer so the editor can respond to them straight from their inbox.
+const forwardToInbox = async ({ email, fromEmail, fromName, attachments, article }) => {
+  const to = config.submissions.forwardTo;
+  if (!to) return;
+
+  const sender = fromName ? `${fromName} <${fromEmail}>` : (fromEmail || 'غير معروف');
+  const editUrl = `${config.frontend.adminUrl || 'https://admin.al-telegraph.com'}/articles/${article._id}/edit`;
+  const banner =
+    `<div style="font-family:sans-serif;background:#f6f3ec;border:1px solid #e5ddc8;border-radius:8px;padding:14px;margin-bottom:16px" dir="rtl">
+       <div style="font-weight:bold;color:#8a6d2f">📥 مساهمة جديدة عبر البريد</div>
+       <div style="font-size:13px;color:#555;margin-top:6px">المُرسِل: ${sender}</div>
+       <div style="font-size:13px;color:#555">أُنشئت كمسودة قيد المراجعة:
+         <a href="${editUrl}" style="color:#8a6d2f">فتح المسودة للتحرير ↗</a></div>
+     </div>`;
+  const original = email.html || (email.text ? `<pre style="white-space:pre-wrap;font-family:sans-serif">${email.text.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</pre>` : '<i>(لا يوجد نص)</i>');
+
+  await resend.sendEmail({
+    from: config.submissions.forwardFrom,
+    to,
+    replyTo: fromEmail || undefined,
+    subject: `[مساهمة] ${email.subject || '(بدون عنوان)'}`,
+    html: banner + original,
+    attachments,
+  });
+  logger.info(`↪︎ Forwarded submission "${article.title}" to ${to}`);
+};
+
 /**
  * POST /submissions/inbound
  * Resend "email.received" webhook. Verifies signature, pulls the full email +
@@ -113,6 +142,11 @@ const inboundWebhook = async (req, res, next) => {
       attachments,
       resendEmailId: emailId,
     });
+
+    // Forward a copy to the configured inbox (e.g. Gmail) — best effort
+    await forwardToInbox({ email, fromEmail, fromName, attachments, article }).catch((e) =>
+      logger.warn('Submission forward failed:', e.message)
+    );
 
     return success(res, { ok: true, articleId: article._id, title: article.title });
   } catch (err) {
