@@ -14,6 +14,7 @@ const ArticleRevisions = lazy(() => import('./pages/articles/ArticleRevisions'))
 const CategoryManager  = lazy(() => import('./pages/categories/CategoryManager'))
 const HomepageControl  = lazy(() => import('./pages/homepage/HomepageControl'))
 const UserManager      = lazy(() => import('./pages/users/UserManager'))
+const WriterManager    = lazy(() => import('./pages/writers/WriterManager'))
 const CommentModeration= lazy(() => import('./pages/comments/CommentModeration'))
 const TickerManager    = lazy(() => import('./pages/tickers/TickerManager'))
 const MediaLibrary     = lazy(() => import('./pages/media/MediaLibrary'))
@@ -92,6 +93,7 @@ export default function App() {
                 </Route>
                 <Route element={<PermissionGuard permission="users.manage" />}>
                   <Route path="/users"              element={<UserManager />} />
+                  <Route path="/writers"            element={<WriterManager />} />
                 </Route>
                 <Route element={<PermissionGuard permission="comments.moderate" />}>
                   <Route path="/comments"           element={<CommentModeration />} />

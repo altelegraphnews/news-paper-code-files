@@ -56,6 +56,12 @@ const userSchema = new mongoose.Schema(
       enum: ROLES,
       default: 'reader',
     },
+    // Signature-only writer profile: a byline identity (name/photo/bio) that
+    // can never log in. Managed from the admin «الكُتّاب» page.
+    isProfileOnly: {
+      type: Boolean,
+      default: false,
+    },
     // Admin-set per-user grants/revocations on top of role defaults
     // e.g. { 'articles.publish': true, 'media.upload': false }
     // Mixed (not Map): permission keys contain dots, which Map keys forbid

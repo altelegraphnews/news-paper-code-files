@@ -99,7 +99,7 @@ router.get('/writers', verifyToken, requirePermission('articles.create'), async 
 // GET /users — staff management
 router.get('/', verifyToken, requirePermission('users.manage'), async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, role, search, isActive } = req.query;
+    const { page = 1, limit = 20, role, search, isActive, isProfileOnly } = req.query;
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
     const skip = (pageNum - 1) * limitNum;
@@ -107,6 +107,10 @@ router.get('/', verifyToken, requirePermission('users.manage'), async (req, res,
     const filter = {};
     if (role) filter.role = role;
     if (isActive !== undefined) filter.isActive = isActive === 'true';
+    // 'false' must also match legacy docs that predate the field
+    if (isProfileOnly !== undefined) {
+      filter.isProfileOnly = isProfileOnly === 'true' ? true : { $ne: true };
+    }
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -149,7 +153,7 @@ router.post('/', verifyToken, requirePermission('users.manage'), validate([
   body('role').isIn(['author', 'editor', 'admin']).withMessage('الدور غير صالح'),
 ]), async (req, res, next) => {
   try {
-    const { email, name, password, role, bio, jobTitle, avatar, socialLinks, permissionOverrides } = req.body;
+    const { email, name, password, role, bio, jobTitle, avatar, socialLinks, permissionOverrides, isProfileOnly } = req.body;
 
     if (!canManageTarget(req.user, role)) {
       return errors.forbidden(res, 'فقط المدير الأعلى يمكنه إنشاء حسابات بصلاحية مدير');
@@ -168,6 +172,7 @@ router.post('/', verifyToken, requirePermission('users.manage'), validate([
       avatar,
       socialLinks,
       permissionOverrides: cleanOverrides(permissionOverrides) || {},
+      isProfileOnly: isProfileOnly === true,
       isActive: true,
       isEmailVerified: true,
       invitedBy: req.user._id,
@@ -295,7 +300,7 @@ router.put('/:id', verifyToken, requirePermission('users.manage'), validate([
       user.role = req.body.role;
     }
 
-    const allowed = ['name', 'isActive', 'bio', 'avatar', 'socialLinks', 'jobTitle'];
+    const allowed = ['name', 'isActive', 'bio', 'avatar', 'socialLinks', 'jobTitle', 'isProfileOnly'];
     allowed.forEach((f) => { if (req.body[f] !== undefined) user[f] = req.body[f]; });
 
     const overrides = cleanOverrides(req.body.permissionOverrides);

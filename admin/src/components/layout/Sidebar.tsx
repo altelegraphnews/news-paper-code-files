@@ -4,7 +4,7 @@ import { clsx } from 'clsx'
 import {
   LayoutDashboard, FileText, FolderOpen, Home, Users, MessageSquare,
   Radio, Image, Calendar, Settings, LogOut, ChevronRight, ChevronLeft,
-  ClipboardCheck, UserCircle,
+  ClipboardCheck, UserCircle, Feather,
 } from 'lucide-react'
 import { useUIStore } from '../../store/uiStore'
 import { useAuthStore, PermissionKey } from '../../store/authStore'
@@ -57,6 +57,7 @@ export default function Sidebar() {
     { to: '/categories', icon: <FolderOpen className="w-5 h-5" />,      label: 'التصنيفات', permission: 'categories.manage' },
     { to: '/homepage',   icon: <Home className="w-5 h-5" />,            label: 'الصفحة الرئيسية', permission: 'homepage.manage' },
     { to: '/users',      icon: <Users className="w-5 h-5" />,           label: 'فريق التحرير', permission: 'users.manage' },
+    { to: '/writers',    icon: <Feather className="w-5 h-5" />,         label: 'الكُتّاب', permission: 'users.manage' },
     { to: '/comments',   icon: <MessageSquare className="w-5 h-5" />,   label: 'التعليقات', permission: 'comments.moderate' },
     { to: '/tickers',    icon: <Radio className="w-5 h-5" />,           label: 'الشريط الإخباري', permission: 'tickers.manage' },
     { to: '/media',      icon: <Image className="w-5 h-5" />,           label: 'مكتبة الوسائط', permission: 'media.manage' },

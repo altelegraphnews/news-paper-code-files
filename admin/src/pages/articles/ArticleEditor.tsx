@@ -5,6 +5,7 @@ import { categoriesApi, type Category } from '../../api/categories'
 import { mediaApi } from '../../api/media'
 import { usersApi } from '../../api/users'
 import RichEditor from '../../components/editor/RichEditor'
+import QuickWriterModal, { type QuickWriter } from '../../components/users/QuickWriterModal'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { Modal } from '../../components/ui/Modal'
@@ -15,7 +16,7 @@ import { clsx } from 'clsx'
 import {
   Save, Send, Clock, Eye, ChevronDown, ChevronUp,
   Image as ImageIcon, X, AlertCircle, CheckCircle,
-  Tag, ClipboardCheck, XCircle,
+  Tag, ClipboardCheck, XCircle, UserPlus,
 } from 'lucide-react'
 
 interface ArticleForm {
@@ -156,6 +157,7 @@ export default function ArticleEditor() {
   const canPublish = can('articles.publish')
   const canFeature = can('articles.feature')
   const canAssignAuthor = can('articles.editAll')
+  const canManageUsers = can('users.manage')
 
   const [form, setForm] = useState<ArticleForm>(EMPTY_FORM)
   const [categories, setCategories] = useState<Category[]>([])
@@ -173,6 +175,7 @@ export default function ArticleEditor() {
   const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [mediaAssets, setMediaAssets] = useState<any[]>([])
   const [mediaLoading, setMediaLoading] = useState(false)
+  const [showQuickWriter, setShowQuickWriter] = useState(false)
   const [mediaTarget, setMediaTarget] = useState<'featured' | 'content'>('featured')
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -770,6 +773,16 @@ export default function ArticleEditor() {
                   </option>
                 ))}
               </select>
+              {canManageUsers && (
+                <button
+                  type="button"
+                  onClick={() => setShowQuickWriter(true)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-gold-700 dark:text-gold-400 hover:text-gold-600 transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  إضافة كاتب جديد
+                </button>
+              )}
               <p className="text-xs text-gray-400">ينشر المقال باسم الكاتب المحدد ويظهر في صفحته.</p>
             </SideSection>
           )}
@@ -1018,6 +1031,16 @@ export default function ArticleEditor() {
           )}
         </div>
       </Modal>
+
+      {/* Quick add-writer (from the author dropdown) */}
+      <QuickWriterModal
+        isOpen={showQuickWriter}
+        onClose={() => setShowQuickWriter(false)}
+        onCreated={(w: QuickWriter) => {
+          setWriters((prev) => [...prev, w])
+          set({ authorId: w._id })
+        }}
+      />
     </div>
   )
 }

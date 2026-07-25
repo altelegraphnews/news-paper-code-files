@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usersApi, type UserRecord } from '../../api/users'
+import { mediaApi } from '../../api/media'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
@@ -11,7 +12,7 @@ import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
 import {
   Search, RefreshCw, Edit2, UserX, UserCheck, Key, UserPlus,
-  ShieldCheck, PenLine, Eye, EyeOff, Copy, Check,
+  ShieldCheck, PenLine, Eye, EyeOff, Copy, Check, Camera, Sparkles,
 } from 'lucide-react'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -155,10 +156,13 @@ interface UserFormState {
   password: string
   role: string
   jobTitle: string
+  bio: string
+  avatarUrl: string
+  isProfileOnly: boolean
   overrides: Record<string, boolean>
 }
 
-const emptyForm: UserFormState = { name: '', email: '', password: '', role: 'author', jobTitle: '', overrides: {} }
+const emptyForm: UserFormState = { name: '', email: '', password: '', role: 'author', jobTitle: '', bio: '', avatarUrl: '', isProfileOnly: false, overrides: {} }
 
 export default function UserManager() {
   const currentUser = useAuthStore((s) => s.user)
@@ -180,6 +184,43 @@ export default function UserManager() {
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // Avatar media picker (same pattern as Profile)
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
+  const [mediaAssets, setMediaAssets] = useState<any[]>([])
+  const [mediaLoading, setMediaLoading] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  const openMediaPicker = () => {
+    setShowMediaPicker(true)
+    if (mediaAssets.length === 0) {
+      setMediaLoading(true)
+      mediaApi.list().then((res) => {
+        setMediaAssets(res.data?.data?.resources || [])
+      }).catch(() => {}).finally(() => setMediaLoading(false))
+    }
+  }
+
+  const handleAvatarFile = async (file: File | undefined) => {
+    if (!file) return
+    const fd = new FormData()
+    fd.append('file', file)
+    setUploadingAvatar(true)
+    try {
+      const res = await mediaApi.upload(fd)
+      const asset = res.data?.data
+      const url = asset?.secure_url || asset?.url
+      if (url) {
+        setForm((f) => ({ ...f, avatarUrl: url }))
+        setMediaAssets((prev) => (asset ? [asset, ...prev] : prev))
+        setShowMediaPicker(false)
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'فشل في رفع الصورة')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   // Reset password modal
   const [resetUser, setResetUser] = useState<UserRecord | null>(null)
   const [resetPassword, setResetPassword] = useState('')
@@ -199,7 +240,7 @@ export default function UserManager() {
 
   const load = (p = page) => {
     setLoading(true)
-    usersApi.list({ page: p, limit, search: search || undefined, role: roleFilter || undefined })
+    usersApi.list({ page: p, limit, search: search || undefined, role: roleFilter || undefined, isProfileOnly: 'false' })
       .then((res) => {
         setUsers(res.data?.data || [])
         setTotal(res.data?.meta?.pagination?.total || 0)
@@ -236,6 +277,9 @@ export default function UserManager() {
       password: '',
       role: user.role,
       jobTitle: user.jobTitle ?? '',
+      bio: user.bio ?? '',
+      avatarUrl: (typeof user.avatar === 'object' ? user.avatar?.url : user.avatar) ?? '',
+      isProfileOnly: user.isProfileOnly === true,
       overrides: { ...(user.permissionOverrides ?? {}) },
     })
     setEditUserId(user.id || (user as any)._id)
@@ -258,6 +302,8 @@ export default function UserManager() {
           password: form.password,
           role: form.role,
           jobTitle: form.jobTitle.trim() || undefined,
+          bio: form.bio.trim() || undefined,
+          avatar: form.avatarUrl ? { url: form.avatarUrl } : undefined,
           permissionOverrides: form.overrides,
         })
         toast.success('تم إنشاء الحساب بنجاح')
@@ -266,9 +312,12 @@ export default function UserManager() {
           name: form.name.trim(),
           role: form.role as any,
           jobTitle: form.jobTitle.trim(),
+          bio: form.bio.trim(),
+          avatar: form.avatarUrl ? { url: form.avatarUrl } : null,
+          isProfileOnly: form.isProfileOnly,
           permissionOverrides: form.overrides,
         })
-        toast.success('تم تحديث الحساب والصلاحيات')
+        toast.success(form.isProfileOnly ? 'تم التحويل إلى ملف توقيع — تجده الآن في صفحة «الكُتّاب»' : 'تم تحديث الحساب والصلاحيات')
       }
       setModalMode(null)
       load()
@@ -499,6 +548,39 @@ export default function UserManager() {
         size="2xl"
       >
         <div className="space-y-5">
+          {/* Avatar — shown on the site next to the writer's byline */}
+          <div className="flex items-center gap-4">
+            <div className="relative group shrink-0">
+              {form.avatarUrl ? (
+                <img src={form.avatarUrl} alt={form.name} className="w-20 h-20 rounded-full object-cover ring-2 ring-gold-400/70" />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-ink-900 flex items-center justify-center text-gold-300 text-2xl font-bold font-heading">
+                  {form.name?.charAt(0) || 'ك'}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={openMediaPicker}
+                className="absolute bottom-0 left-0 p-1.5 bg-gold-500 text-ink-950 rounded-full shadow hover:bg-gold-400 transition-colors"
+                title="تغيير الصورة"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="text-xs text-gray-400 leading-relaxed">
+              الصورة الشخصية تظهر بجانب اسم الكاتب في المقالات وصفحة الكاتب.
+              {form.avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, avatarUrl: '' })}
+                  className="block mt-1 text-red-400 hover:text-red-500"
+                >
+                  إزالة الصورة
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label-base">الاسم الكامل (سيظهر كتوقيع الكاتب)</label>
@@ -572,7 +654,39 @@ export default function UserManager() {
                 {form.role === 'admin' && 'المدير: جميع الصلاحيات بما فيها إدارة الفريق.'}
               </p>
             </div>
+            <div className="sm:col-span-2">
+              <label className="label-base">نبذة تعريفية (تظهر في صفحة الكاتب — اختياري)</label>
+              <textarea
+                value={form.bio}
+                onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                rows={3}
+                maxLength={500}
+                placeholder="نبذة قصيرة عن الكاتب..."
+                className="input-base text-sm resize-none"
+              />
+            </div>
           </div>
+
+          {/* Signature-only writers live on the «الكُتّاب» page, not here */}
+          {modalMode === 'create' && (
+            <p className="flex items-start gap-1.5 text-xs text-gray-400 leading-relaxed">
+              <Sparkles className="w-3.5 h-3.5 text-gold-500 shrink-0 mt-0.5" />
+              هذه الصفحة للحسابات الحقيقية التي تسجّل دخولها. لإضافة كاتب يُنشر باسمه فقط (بدون حساب دخول)، استخدم صفحة «الكُتّاب».
+            </p>
+          )}
+          {modalMode === 'edit' && (
+            <label className="flex items-start gap-2.5 rounded-md border border-gray-200 dark:border-gray-700 px-3 py-2.5 cursor-pointer hover:border-gold-400 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.isProfileOnly}
+                onChange={(e) => setForm({ ...form, isProfileOnly: e.target.checked })}
+                className="mt-0.5 accent-gold-500"
+              />
+              <span className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                <b>ملف توقيع فقط</b> — لا يستطيع تسجيل الدخول، ويُدار من صفحة «الكُتّاب». تبقى مقالاته باسمه كما هي.
+              </span>
+            </label>
+          )}
 
           {/* Privileges */}
           <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
@@ -593,6 +707,47 @@ export default function UserManager() {
             </Button>
             <Button variant="ghost" onClick={() => setModalMode(null)} className="flex-1">إلغاء</Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Avatar media picker */}
+      <Modal isOpen={showMediaPicker} onClose={() => setShowMediaPicker(false)} title="اختر صورة الكاتب" size="lg">
+        <div className="space-y-4">
+          <label className={clsx(
+            'flex items-center justify-center gap-2 rounded-md border-2 border-dashed border-gold-300 dark:border-gold-700 py-3 text-sm cursor-pointer transition-colors',
+            uploadingAvatar ? 'opacity-60 pointer-events-none' : 'hover:border-gold-500 hover:bg-gold-50 dark:hover:bg-gold-900/10'
+          )}>
+            <Camera className="w-4 h-4 text-gold-600" />
+            <span className="text-gray-700 dark:text-gray-200">{uploadingAvatar ? 'جارِ الرفع...' : 'رفع صورة جديدة من الجهاز'}</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { handleAvatarFile(e.target.files?.[0]); e.target.value = '' }}
+            />
+          </label>
+          {mediaLoading ? (
+            <div className="grid grid-cols-4 gap-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="aspect-square rounded-md bg-gray-100 dark:bg-gray-700 animate-pulse" />
+              ))}
+            </div>
+          ) : mediaAssets.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">لا توجد صور في المكتبة بعد — ارفع صورة من الأعلى</div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+              {mediaAssets.map((asset) => (
+                <button
+                  key={asset.public_id}
+                  type="button"
+                  onClick={() => { setForm({ ...form, avatarUrl: asset.secure_url || asset.url }); setShowMediaPicker(false) }}
+                  className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-gold-500 transition-colors"
+                >
+                  <img src={asset.secure_url || asset.url} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </Modal>
 

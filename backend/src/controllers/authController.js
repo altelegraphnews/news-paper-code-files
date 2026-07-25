@@ -47,6 +47,11 @@ const login = async (req, res, next) => {
       return errors.unauthorized(res, 'حسابك معطل، يرجى التواصل مع الدعم الفني');
     }
 
+    // Signature-only writer profiles are identities, not accounts — no login
+    if (user.isProfileOnly) {
+      return errors.unauthorized(res, 'هذا الحساب ملف توقيع فقط ولا يمكن تسجيل الدخول به');
+    }
+
     // Generate tokens
     const accessToken = generateAccessToken(user._id, user.role);
     const refreshToken = generateRefreshToken(user._id, user.role);

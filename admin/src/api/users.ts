@@ -10,6 +10,7 @@ export interface UserRecord {
   avatar?: { url?: string } | string
   bio?: string
   jobTitle?: string
+  isProfileOnly?: boolean
   isActive: boolean
   lastLoginAt?: string
   articlesCount?: number
@@ -25,11 +26,13 @@ export interface CreateUserPayload {
   role: string
   jobTitle?: string
   bio?: string
+  avatar?: { url: string }
+  isProfileOnly?: boolean
   permissionOverrides?: Record<string, boolean>
 }
 
 export const usersApi = {
-  list: (params?: { page?: number; limit?: number; search?: string; role?: string; isActive?: string }) =>
+  list: (params?: { page?: number; limit?: number; search?: string; role?: string; isActive?: string; isProfileOnly?: string }) =>
     apiClient.get('/users', { params }),
 
   get: (id: string) =>
@@ -44,7 +47,7 @@ export const usersApi = {
   create: (data: CreateUserPayload) =>
     apiClient.post('/users', data),
 
-  update: (id: string, data: Partial<UserRecord> & { permissionOverrides?: Record<string, boolean> }) =>
+  update: (id: string, data: Partial<Omit<UserRecord, 'avatar'>> & { avatar?: { url: string } | null; permissionOverrides?: Record<string, boolean> }) =>
     apiClient.put(`/users/${id}`, data),
 
   delete: (id: string) =>
