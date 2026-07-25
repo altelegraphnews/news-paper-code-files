@@ -3,21 +3,21 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, X, Clock, TrendingUp } from 'lucide-react';
+import { Search, X, Compass } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useInstantSearch } from '@/lib/hooks/useSearch';
 import { getRelativeTime } from '@/lib/utils/dateUtils';
 import { CategoryBadge } from './Badge';
 import LazyImage from './LazyImage';
+import type { Category } from '@/lib/types';
 
 interface SearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
+  categories?: Category[];
 }
 
-const popularSearches = ['السياسة', 'الاقتصاد', 'الرياضة', 'ثقافة', 'تقنية'];
-
-export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
+export default function SearchOverlay({ isOpen, onClose, categories = [] }: SearchOverlayProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const { query, setQuery, previewResults, isLoading, clearSearch } = useInstantSearch(300);
@@ -179,29 +179,34 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             </div>
           )}
 
-          {/* Empty state - show popular searches */}
+          {/* Empty state — browse the real sections */}
           {!query && (
             <div className="p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-4 h-4 text-accent" />
-                <span className="text-sm font-heading font-semibold text-gray-600 dark:text-gray-400">
-                  الأكثر بحثاً
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {popularSearches.map((term) => (
-                  <button
-                    key={term}
-                    onClick={() => setQuery(term)}
-                    className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-heading hover:bg-primary hover:text-white dark:hover:bg-primary-700 transition-colors"
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
+              {categories.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Compass className="w-4 h-4 text-accent" />
+                    <span className="text-sm font-heading font-semibold text-gray-600 dark:text-gray-400">
+                      تصفّح الأقسام
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((cat) => (
+                      <Link
+                        key={cat._id || cat.slug}
+                        href={`/category/${cat.slug}`}
+                        onClick={onClose}
+                        className="px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-heading hover:bg-accent hover:text-ink dark:hover:bg-accent transition-colors"
+                      >
+                        {cat.name}
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <p className="text-xs text-gray-400 mt-6 text-center font-heading">
-                اضغط <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-300 font-mono text-xs">Enter</kbd> للبحث الكامل
+                اكتب كلمةً ثمّ اضغط <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-gray-600 dark:text-gray-300 font-mono text-xs">Enter</kbd> للبحث الكامل
               </p>
             </div>
           )}

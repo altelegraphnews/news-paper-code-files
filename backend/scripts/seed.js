@@ -17,13 +17,13 @@ const { generateSlug } = require('../src/utils/slugGenerator');
 
 const CATEGORIES = [
   { name: 'المدخل', nameEn: 'Editorial', slug: 'madkhal', color: '#1a2744', icon: '📰', order: 1, showInNav: true },
-  { name: 'شعر', nameEn: 'Poetry', slug: 'shir', color: '#8e44ad', icon: '📜', order: 2, showInNav: true },
-  { name: 'سرد', nameEn: 'Prose', slug: 'sard', color: '#2980b9', icon: '📖', order: 3, showInNav: true },
-  { name: 'قراءات', nameEn: 'Reviews', slug: 'qiraat', color: '#27ae60', icon: '🔍', order: 4, showInNav: true },
-  { name: 'فكر', nameEn: 'Thought', slug: 'fikr', color: '#c9a84c', icon: '💡', order: 5, showInNav: true },
-  { name: 'حوار', nameEn: 'Interview', slug: 'hiwar', color: '#e74c3c', icon: '🎙️', order: 6, showInNav: true },
-  { name: 'ترجمة', nameEn: 'Translation', slug: 'tarjama', color: '#16a085', icon: '🌐', order: 7, showInNav: true },
-  { name: 'إصدارات', nameEn: 'Publications', slug: 'isdaraat', color: '#e67e22', icon: '📚', order: 8, showInNav: true },
+  { name: 'شعر', nameEn: 'Poetry', slug: 'شعر', color: '#8e44ad', icon: '📜', order: 2, showInNav: true },
+  { name: 'سرد', nameEn: 'Prose', slug: 'سرد', color: '#2980b9', icon: '📖', order: 3, showInNav: true },
+  { name: 'قراءات', nameEn: 'Reviews', slug: 'قراءات', color: '#27ae60', icon: '🔍', order: 4, showInNav: true },
+  { name: 'فكر', nameEn: 'Thought', slug: 'فكر', color: '#c9a84c', icon: '💡', order: 5, showInNav: true },
+  { name: 'حوار', nameEn: 'Interview', slug: 'حوار', color: '#e74c3c', icon: '🎙️', order: 6, showInNav: true },
+  { name: 'ترجمة', nameEn: 'Translation', slug: 'ترجمة', color: '#16a085', icon: '🌐', order: 7, showInNav: true },
+  { name: 'إصدارات', nameEn: 'Publications', slug: 'إصدارات', color: '#e67e22', icon: '📚', order: 8, showInNav: true },
 ];
 
 const ARTICLE_TEMPLATES = [

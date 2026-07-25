@@ -315,7 +315,7 @@ router.put('/:id', verifyToken, requirePermission('users.manage'), validate([
   } catch (err) { next(err); }
 });
 
-// DELETE /users/:id — super_admin only
+// DELETE /users/:id — permanently delete an account (super_admin only)
 router.delete('/:id', verifyToken, requireAtLeast('super_admin'), validate([
   param('id').isMongoId(),
 ]), async (req, res, next) => {
@@ -323,13 +323,21 @@ router.delete('/:id', verifyToken, requireAtLeast('super_admin'), validate([
     const user = await User.findById(req.params.id);
     if (!user) return errors.notFound(res, 'المستخدم');
     if (user.role === 'super_admin') return errors.forbidden(res, 'لا يمكن حذف حساب المدير الأعلى');
+    if (String(user._id) === String(req.user._id)) return errors.forbidden(res, 'لا يمكنك حذف حسابك الخاص');
 
-    user.isActive = false;
-    user.refreshTokens = [];
-    await user.save();
+    // Block deletion if articles are attributed to them (would orphan bylines)
+    const Article = require('../models/Article');
+    const articleCount = await Article.countDocuments({
+      $or: [{ author: user._id }, { coAuthors: user._id }],
+      isDeleted: { $ne: true },
+    });
+    if (articleCount > 0) {
+      return errors.badRequest(res, `لا يمكن حذف الحساب لوجود ${articleCount} مقال منسوب إليه — أعد إسناد مقالاته إلى كاتب آخر ثمّ احذفه`);
+    }
 
-    await logAction({ req, action: 'user.deactivate', resourceType: 'user', resourceId: user._id, severity: 'high' });
-    return success(res, null, 'تم تعطيل حساب المستخدم');
+    await User.deleteOne({ _id: user._id });
+    await logAction({ req, action: 'user.delete', resourceType: 'user', resourceId: user._id, resourceTitle: user.email, severity: 'high' });
+    return success(res, null, 'تم حذف الحساب نهائياً');
   } catch (err) { next(err); }
 });
 

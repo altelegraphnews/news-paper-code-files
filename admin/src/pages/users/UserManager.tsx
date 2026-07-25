@@ -12,7 +12,7 @@ import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
 import {
   Search, RefreshCw, Edit2, UserX, UserCheck, Key, UserPlus,
-  ShieldCheck, PenLine, Eye, EyeOff, Copy, Check, Camera, Sparkles,
+  ShieldCheck, PenLine, Eye, EyeOff, Copy, Check, Camera, Sparkles, Trash2,
 } from 'lucide-react'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -229,6 +229,25 @@ export default function UserManager() {
   const [copied, setCopied] = useState(false)
 
   const [deactivateId, setDeactivateId] = useState<string | null>(null)
+  const [deleteUser, setDeleteUser] = useState<UserRecord | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!deleteUser) return
+    const uid = deleteUser.id || (deleteUser as any)._id
+    setDeleting(true)
+    try {
+      await usersApi.delete(uid)
+      setUsers((prev) => prev.filter((u) => (u.id || (u as any)._id) !== uid))
+      setTotal((t) => Math.max(0, t - 1))
+      toast.success('تم حذف الحساب نهائياً')
+      setDeleteUser(null)
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'تعذّر حذف الحساب')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const limit = 15
   const totalPages = Math.ceil(total / limit)
@@ -525,6 +544,15 @@ export default function UserManager() {
                           {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                         </button>
                       )}
+                      {!isSelf && !isProtected && (
+                        <button
+                          onClick={() => setDeleteUser(user)}
+                          className="p-1.5 text-gray-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
+                          title="حذف الحساب نهائياً"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -803,6 +831,17 @@ export default function UserManager() {
         variant="primary"
         onConfirm={handleToggleActive}
         onCancel={() => setDeactivateId(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteUser !== null}
+        title="حذف الحساب نهائياً؟"
+        message={`سيُحذف حساب «${deleteUser?.name ?? ''}» نهائياً ولا يمكن التراجع. (لا يمكن حذف حساب له مقالات منسوبة إليه — أعد إسنادها أولاً.)`}
+        confirmLabel="حذف نهائي"
+        variant="danger"
+        isLoading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteUser(null)}
       />
     </div>
   )

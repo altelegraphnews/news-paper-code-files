@@ -20,7 +20,7 @@ const articleUrl = (article: Article) =>
  * author's portrait and fall back to ogImage only when there is none.
  */
 function cardImage(article: Article): { url?: string; alt?: string } {
-  if (article.category?.slug === 'shir') {
+  if (article.category?.slug === 'شعر') {
     const avatar = article.author?.avatar as { url?: string } | string | undefined;
     const url = typeof avatar === 'string' ? avatar : avatar?.url;
     if (url) return { url, alt: article.author?.name || article.title };

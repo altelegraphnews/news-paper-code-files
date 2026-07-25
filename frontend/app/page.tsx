@@ -364,7 +364,7 @@ export default async function HomePage() {
       {(categoryRows || [])
         .filter(
           (row: { category: { slug: string }; articles: Article[] }) =>
-            !(opinion?.length && (row.category.slug === 'fikr' || row.category.slug === 'madkhal'))
+            !(opinion?.length && (row.category.slug === 'فكر' || row.category.slug === 'madkhal'))
         )
         .map((row: { category: { name: string; slug: string; color?: string }; articles: Article[] }) => (
           <CategorySection key={row.category.slug} category={row.category} articles={row.articles} />

@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { Pagination } from '../../components/ui/Pagination'
 import toast from 'react-hot-toast'
-import { Search, Feather, UserPlus, Edit2, UserCog } from 'lucide-react'
+import { Search, Feather, UserPlus, Edit2, UserCog, Trash2 } from 'lucide-react'
 
 const avatarUrlOf = (u: UserRecord) => (typeof u.avatar === 'object' ? u.avatar?.url : u.avatar) || ''
 
@@ -26,6 +26,23 @@ export default function WriterManager() {
   const [showModal, setShowModal] = useState(false)
   const [editWriter, setEditWriter] = useState<UserRecord | null>(null)
   const [convertWriter, setConvertWriter] = useState<UserRecord | null>(null)
+  const [deleteWriter, setDeleteWriter] = useState<UserRecord | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!deleteWriter) return
+    setDeleting(true)
+    try {
+      await usersApi.delete(deleteWriter.id || (deleteWriter as any)._id)
+      toast.success('تم حذف الكاتب نهائياً')
+      setDeleteWriter(null)
+      load()
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'تعذّر حذف الكاتب')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const limit = 12
   const totalPages = Math.ceil(total / limit)
@@ -143,6 +160,14 @@ export default function WriterManager() {
                     <UserCog className="w-3.5 h-3.5" />
                     حساب حقيقي
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteWriter(w)}
+                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-red-600 transition-colors"
+                    title="حذف الكاتب نهائياً"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             )
@@ -173,6 +198,18 @@ export default function WriterManager() {
         message={`سيتمكن «${convertWriter?.name ?? ''}» من تسجيل الدخول (بعد إعادة تعيين كلمة المرور) وسيظهر في صفحة فريق التحرير بدلاً من هنا.`}
         confirmLabel="تحويل"
         variant="primary"
+      />
+
+      {/* Delete writer */}
+      <ConfirmDialog
+        isOpen={deleteWriter !== null}
+        onClose={() => setDeleteWriter(null)}
+        onConfirm={handleDelete}
+        title="حذف الكاتب نهائياً؟"
+        message={`سيُحذف ملف «${deleteWriter?.name ?? ''}» نهائياً ولا يمكن التراجع. (لا يمكن حذف كاتبٍ له مقالات منشورة — أعد إسنادها إلى كاتبٍ آخر أولاً.)`}
+        confirmLabel="حذف نهائي"
+        variant="danger"
+        isLoading={deleting}
       />
     </div>
   )
