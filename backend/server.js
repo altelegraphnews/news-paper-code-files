@@ -73,7 +73,11 @@ app.use(cors({
 
 app.use(compression());
 app.use(cookieParser());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  // Stash the raw body so webhook routes can verify signatures (Svix/Resend)
+  verify: (req, _res, buf) => { req.rawBody = buf; },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // HTTP request logging
@@ -104,6 +108,7 @@ app.use(`${apiBase}/users`, userRoutes);
 app.use(`${apiBase}/homepage`, homepageRoutes);
 app.use(`${apiBase}/media`, mediaRoutes);
 app.use(`${apiBase}/notifications`, notificationRoutes);
+app.use(`${apiBase}/submissions`, require('./src/routes/submissions'));
 
 // ─── 404 & Error handlers ─────────────────────────────────────────────────────
 app.use(notFoundHandler);

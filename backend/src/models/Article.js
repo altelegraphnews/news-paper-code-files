@@ -183,6 +183,16 @@ const articleSchema = new mongoose.Schema(
       name: String,
       url: String,
     },
+    // Set when the article was created from an inbound email submission
+    submission: {
+      via: { type: String, enum: ['email'] },
+      senderEmail: String,
+      senderName: String,
+      resendEmailId: String,
+      receivedAt: Date,
+      hadDocx: { type: Boolean, default: false },
+      authorMatched: { type: Boolean, default: false },
+    },
     language: {
       type: String,
       default: 'ar',

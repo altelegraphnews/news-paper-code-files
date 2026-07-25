@@ -67,6 +67,19 @@ const config = {
     subject: process.env.VAPID_SUBJECT || 'mailto:admin@alwid.com',
   },
 
+  // Inbound article submissions by email (Resend receiving)
+  submissions: {
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    // Svix signing secret from the Resend webhook (whsec_...)
+    webhookSecret: process.env.RESEND_WEBHOOK_SECRET || '',
+    // Address writers send to; used only for display/hints
+    inboundAddress: process.env.SUBMISSIONS_INBOUND_ADDRESS || 'submit@al-telegraph.com',
+    // Category slug new submissions land in (created if missing)
+    defaultCategorySlug: process.env.SUBMISSIONS_CATEGORY_SLUG || 'musahamat',
+    // Skip attachments larger than this (bytes) — safety valve
+    maxAttachmentBytes: parseInt(process.env.SUBMISSIONS_MAX_ATTACHMENT_BYTES, 10) || 20 * 1024 * 1024,
+  },
+
   frontend: {
     url: process.env.FRONTEND_URL || 'http://localhost:3000',
     allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001').split(','),

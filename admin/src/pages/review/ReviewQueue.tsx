@@ -8,7 +8,7 @@ import { timeAgo } from '../../utils/dateUtils'
 import toast from 'react-hot-toast'
 import {
   ClipboardCheck, CheckCircle2, XCircle, RefreshCw, Clock,
-  User, FolderOpen, Timer, ExternalLink,
+  User, FolderOpen, Timer, ExternalLink, Mail, FileText,
 } from 'lucide-react'
 
 interface PendingArticle {
@@ -20,6 +20,7 @@ interface PendingArticle {
   author?: { name?: string; avatar?: { url?: string } }
   readingTimeMin?: number
   review?: { submittedAt?: string }
+  submission?: { via?: string; senderEmail?: string; senderName?: string; hadDocx?: boolean; authorMatched?: boolean }
   createdAt: string
   updatedAt: string
 }
@@ -135,6 +136,25 @@ export default function ReviewQueue() {
                       </Link>
                       {article.excerpt && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{article.excerpt}</p>
+                      )}
+                      {article.submission?.via === 'email' && (
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <Badge variant="info" className="text-[11px]">
+                            <Mail className="w-3 h-3 ml-1" />
+                            وصل عبر البريد
+                          </Badge>
+                          {article.submission.hadDocx && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-gray-400">
+                              <FileText className="w-3 h-3" /> ملف Word
+                            </span>
+                          )}
+                          {article.submission.senderEmail && (
+                            <span className="text-[11px] text-gray-400" dir="ltr">{article.submission.senderEmail}</span>
+                          )}
+                          {article.submission.authorMatched === false && (
+                            <span className="text-[11px] text-amber-600 dark:text-amber-400">⚠ عيّن الكاتب</span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <Badge variant="gold" className="flex-shrink-0">
