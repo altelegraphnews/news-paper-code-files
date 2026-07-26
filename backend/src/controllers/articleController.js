@@ -110,7 +110,7 @@ const getArticle = async (req, res, next) => {
     const article = await baseQuery
       .populate('category', 'name slug color icon')
       .populate('subcategory', 'name slug')
-      .populate('author', 'name nameEn avatar bio socialLinks slug')
+      .populate('author', 'name nameEn avatar bio jobTitle socialLinks slug')
       .populate('coAuthors', 'name avatar')
       .populate('relatedArticles', 'title slug ogImage category publishedAt readingTimeMin')
       .lean();

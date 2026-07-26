@@ -36,3 +36,23 @@ export function avatarSrc(avatar: AvatarLike, size: number): string | undefined 
   const px = Math.round(size * 2);
   return url.replace('/upload/', `/upload/f_auto,q_auto,c_fill,g_face,w_${px},h_${px}/`);
 }
+
+/**
+ * Like avatarSrc but for a rectangular portrait frame (the article byline
+ * plate). The face crop is computed for the actual 3:4 shape so g_face frames
+ * it correctly — a square crop re-cropped by CSS centres the face on the
+ * square, not the tall frame, and can push it off. `width` is the CSS width;
+ * the request is doubled for retina and the height derived from the ratio.
+ */
+export function avatarPortraitSrc(
+  avatar: AvatarLike,
+  width: number,
+  ratio = 4 / 3,
+): string | undefined {
+  const url = avatarUrl(avatar);
+  if (!url) return undefined;
+  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+  const w = Math.round(width * 2);
+  const h = Math.round(w * ratio);
+  return url.replace('/upload/', `/upload/f_auto,q_auto,c_fill,g_face,w_${w},h_${h}/`);
+}

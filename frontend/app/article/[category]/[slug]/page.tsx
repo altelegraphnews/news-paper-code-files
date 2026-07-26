@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import ArticleBody from '@/components/article/ArticleBody';
-import AuthorCard from '@/components/article/AuthorCard';
 import ShareButtons from '@/components/article/ShareButtons';
 import RelatedArticles from '@/components/article/RelatedArticles';
 import Badge from '@/components/ui/Badge';
@@ -12,7 +11,7 @@ import ReadingProgress from '@/components/ui/ReadingProgress';
 import ViewTracker from '@/components/article/ViewTracker';
 import { Article } from '@/lib/types';
 import { formatArabicDateTime } from '@/lib/utils/dateUtils';
-import { avatarUrl, avatarSrc } from '@/lib/utils/avatar';
+import { avatarUrl, avatarSrc, avatarPortraitSrc } from '@/lib/utils/avatar';
 
 import { API_URL } from '@/lib/api';
 import {
@@ -184,24 +183,70 @@ export default async function ArticlePage({ params }: Props) {
           <span className="morse-line w-44" />
         </div>
 
-        {/* Author + Meta */}
-        <div className="rise rise-4 flex items-center justify-between flex-wrap gap-4 mb-6 pb-6 border-b border-[color:var(--color-border)]">
-          {article.author && (
-            <AuthorCard
-              author={article.author}
-              publishedAt={article.publishedAt}
-              readingTimeMin={article.readingTimeMin}
-            />
-          )}
-          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-            {article.views?.total > 0 && (
-              <span>{article.views.total.toLocaleString('ar')} مشاهدة</span>
-            )}
-            {article.commentsCount > 0 && (
-              <span>{article.commentsCount} تعليق</span>
+        {/* Author plate — a full-width band under the title: portrait, name,
+            role and date on the reading side, stats on the far side. Fills the
+            byline row instead of stranding a small circle at the margin. */}
+        {article.author ? (
+          <div className="rise rise-4 mb-8 flex items-center gap-4 sm:gap-5 flex-wrap border-t border-b border-[color:var(--color-border)] py-4">
+            <Link
+              href={`/author/${article.author.slug || article.author._id}`}
+              className="relative w-[84px] sm:w-24 aspect-[3/4] flex-shrink-0 overflow-hidden rounded-sm ring-1 ring-accent/60 bg-[color:var(--color-surface-2)]"
+            >
+              {avatarPortraitSrc(article.author.avatar, 96) ? (
+                <Image
+                  src={avatarPortraitSrc(article.author.avatar, 96)!}
+                  alt={article.author.name}
+                  fill
+                  unoptimized
+                  className="object-cover"
+                  sizes="96px"
+                />
+              ) : (
+                <span className="absolute inset-0 flex items-center justify-center text-accent-700 dark:text-accent-300 font-heading font-bold text-3xl">
+                  {article.author.name?.charAt(0) || 'ك'}
+                </span>
+              )}
+            </Link>
+
+            <div className="flex-1 min-w-[160px]">
+              <Link
+                href={`/author/${article.author.slug || article.author._id}`}
+                className="font-heading font-bold text-lg sm:text-xl text-gray-900 dark:text-gray-100 hover:text-accent transition-colors"
+              >
+                {article.author.name}
+              </Link>
+              {(article.author.jobTitle || article.author.bio) && (
+                <p className="text-sm text-accent-700 dark:text-accent-300 mt-0.5 line-clamp-1">
+                  {article.author.jobTitle || article.author.bio}
+                </p>
+              )}
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-1 flex-wrap">
+                {article.publishedAt && (
+                  <time dateTime={article.publishedAt}>
+                    {new Intl.DateTimeFormat('ar-IQ', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(article.publishedAt))}
+                  </time>
+                )}
+                {article.readingTimeMin > 0 && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>{article.readingTimeMin.toLocaleString('ar')} دقائق للقراءة</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {(article.views?.total > 0 || article.commentsCount > 0) && (
+              <div className="flex flex-col items-end gap-1 text-sm text-gray-500 dark:text-gray-400 self-stretch justify-center border-r border-[color:var(--color-border)] pr-4 sm:pr-5">
+                {article.views?.total > 0 && (
+                  <span>{article.views.total.toLocaleString('ar')} مشاهدة</span>
+                )}
+                {article.commentsCount > 0 && (
+                  <span>{article.commentsCount} تعليق</span>
+                )}
+              </div>
             )}
           </div>
-        </div>
+        ) : null}
 
         {/* Hero image */}
         {article.ogImage?.url && (
