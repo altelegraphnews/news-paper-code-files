@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
 import Reveal from '@/components/ui/Reveal';
+import { absoluteUrl } from '@/lib/utils/seoUtils';
 
 export const metadata: Metadata = {
-  title: 'هيئة التحرير | التلغراف',
+  title: 'هيئة التحرير',
   description: 'تعرّف على هيئة تحرير مجلة التلغراف الثقافية والأدبية.',
+  alternates: { canonical: absoluteUrl('/editorial-board') },
 };
 
 interface EditorMember {

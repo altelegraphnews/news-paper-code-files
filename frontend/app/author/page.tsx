@@ -6,10 +6,12 @@ import Reveal from '@/components/ui/Reveal';
 
 import { API_URL } from '@/lib/api';
 import { avatarUrl } from '@/lib/utils/avatar';
+import { absoluteUrl } from '@/lib/utils/seoUtils';
 
 export const metadata: Metadata = {
-  title: 'الكتّاب | التلغراف',
+  title: 'الكتّاب',
   description: 'تعرّف على كتّاب مجلة التلغراف وتصفّح موادهم المنشورة في الشعر والسرد والفكر والترجمة.',
+  alternates: { canonical: absoluteUrl('/author') },
 };
 
 export const revalidate = 300;

@@ -7,6 +7,7 @@ import Reveal from '@/components/ui/Reveal';
 import { Article } from '@/lib/types';
 
 import { API_URL } from '@/lib/api';
+import { SITE_NAME, absoluteUrl, metaDescription } from '@/lib/utils/seoUtils';
 
 interface Props {
   params: { slug: string };
@@ -29,9 +30,16 @@ async function getTagArticles(tag: string, page = 1) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const tag = decodeURIComponent(params.slug);
+  const url = absoluteUrl(`/tag/${tag}`);
+  const description = metaDescription(
+    `كل ما نُشر تحت وسم «${tag}» في مجلة التلغراف الأدبية والثقافية — مقالات وقصائد وقراءات.`
+  );
   return {
-    title: `${tag} | التلغراف`,
-    description: `أحدث المواد المصنفة تحت وسم «${tag}» في مجلة التلغراف`,
+    title: tag,
+    description,
+    keywords: [tag, `${tag} التلغراف`, 'مجلة التلغراف'],
+    alternates: { canonical: url },
+    openGraph: { type: 'website', url, siteName: SITE_NAME, locale: 'ar_IQ', title: `${tag} | ${SITE_NAME}`, description },
   };
 }
 

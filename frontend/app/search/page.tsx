@@ -14,7 +14,7 @@ interface Props {
 }
 
 export const metadata: Metadata = {
-  title: 'البحث | التلغراف',
+  title: 'البحث',
   robots: { index: false, follow: false },
 };
 

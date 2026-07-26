@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import PageHeader from '@/components/layout/PageHeader';
 import Reveal from '@/components/ui/Reveal';
 import SubmitForm from '@/components/submit/SubmitForm';
+import { absoluteUrl } from '@/lib/utils/seoUtils';
 
 export const metadata: Metadata = {
-  title: 'أرسل مقالك | التلغراف',
+  title: 'أرسل مقالك',
   description:
     'أرسل مقالك إلى مجلة التلغراف الأدبية والثقافية مباشرةً عبر النموذج، أو بالبريد إلى submit@al-telegraph.com.',
+  alternates: { canonical: absoluteUrl('/contact') },
 };
 
 const SUBMIT_EMAIL = 'submit@al-telegraph.com';

@@ -15,7 +15,16 @@ import { formatArabicDateTime } from '@/lib/utils/dateUtils';
 import { avatarUrl } from '@/lib/utils/avatar';
 
 import { API_URL } from '@/lib/api';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://altilgraf.com';
+import {
+  SITE_URL,
+  SITE_NAME,
+  TWITTER_HANDLE,
+  absoluteUrl,
+  metaDescription,
+  buildArticleSchema,
+  buildBreadcrumbSchema,
+  jsonLdScript,
+} from '@/lib/utils/seoUtils';
 
 // ISR: cache each rendered article for 5 minutes so navigating to it (or back to
 // it) is served from cache instead of re-rendering + re-querying the backend.
@@ -55,34 +64,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const article = await getArticle(params.slug);
   if (!article) return { title: 'المقال غير موجود | التلغراف' };
 
-  const url = `${SITE_URL}/article/${params.category}/${params.slug}`;
+  const url = absoluteUrl(`/article/${params.category}/${params.slug}`);
+  // Two thirds of the archive has no hand-written SEO title/description, so the
+  // fallback chain is what most results actually show: the headline, and the
+  // excerpt trimmed to a length Google will not cut mid-word.
+  const title = article.seo?.title || article.title;
+  const description = metaDescription(article.seo?.description || article.excerpt);
+  const keywords = article.seo?.keywords?.length ? article.seo.keywords : article.tags;
+  const image = article.ogImage?.url;
+  const imageAlt = article.ogImage?.alt || article.title;
 
   return {
-    title: article.seo?.title || article.title,
-    description: article.seo?.description || article.excerpt,
-    keywords: article.seo?.keywords || article.tags,
-    authors: [{ name: article.author?.name }],
+    title,
+    description,
+    keywords,
+    authors: article.author?.name ? [{ name: article.author.name }] : undefined,
     alternates: { canonical: url },
     openGraph: {
       type: 'article',
       url,
-      title: article.seo?.title || article.title,
-      description: article.seo?.description || article.excerpt,
-      images: article.ogImage?.url ? [{ url: article.ogImage.url, alt: article.ogImage.alt }] : [],
+      title,
+      description,
+      images: image ? [{ url: image, alt: imageAlt, width: 1200, height: 630 }] : [],
       locale: 'ar_IQ',
-      siteName: 'التلغراف',
+      siteName: SITE_NAME,
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt,
-      authors: [article.author?.name || ''],
+      authors: article.author?.name ? [article.author.name] : undefined,
       section: article.category?.name,
       tags: article.tags,
     },
     twitter: {
       card: 'summary_large_image',
-      site: '@altilgraf',
-      title: article.seo?.title || article.title,
-      description: article.seo?.description || article.excerpt,
-      images: article.ogImage?.url ? [article.ogImage.url] : [],
+      site: TWITTER_HANDLE,
+      title,
+      description,
+      images: image ? [image] : [],
     },
   };
 }
@@ -91,38 +108,26 @@ export default async function ArticlePage({ params }: Props) {
   const article = await getArticle(params.slug);
   if (!article) notFound();
 
-  const articleUrl = `${SITE_URL}/article/${params.category}/${params.slug}`;
+  const articleUrl = absoluteUrl(`/article/${params.category}/${params.slug}`);
 
-  // JSON-LD structured data
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'NewsArticle',
-    headline: article.title,
-    description: article.excerpt,
-    image: article.ogImage?.url,
-    datePublished: article.publishedAt,
-    dateModified: article.updatedAt || article.publishedAt,
-    author: {
-      '@type': 'Person',
-      name: article.author?.name,
-      url: article.author?.slug ? `${SITE_URL}/author/${article.author.slug}` : undefined,
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'التلغراف',
-      logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` },
-    },
-    mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
-    articleSection: article.category?.name,
-    keywords: article.tags?.join(', '),
-    inLanguage: 'ar',
-  };
+  const jsonLd = buildArticleSchema(article, articleUrl);
+  const breadcrumbLd = buildBreadcrumbSchema([
+    { name: 'الرئيسية', url: SITE_URL },
+    ...(article.category
+      ? [{ name: article.category.name, url: absoluteUrl(`/category/${article.category.slug}`) }]
+      : []),
+    { name: article.title, url: articleUrl },
+  ]);
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={jsonLdScript(jsonLd)}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(breadcrumbLd)}
       />
 
       <ReadingProgress />

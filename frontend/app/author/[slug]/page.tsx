@@ -8,6 +8,15 @@ import Reveal from '@/components/ui/Reveal';
 import { Article } from '@/lib/types';
 
 import { API_URL } from '@/lib/api';
+import {
+  SITE_URL,
+  SITE_NAME,
+  absoluteUrl,
+  metaDescription,
+  buildPersonSchema,
+  buildBreadcrumbSchema,
+  jsonLdScript,
+} from '@/lib/utils/seoUtils';
 import { avatarUrl } from '@/lib/utils/avatar';
 
 interface Props {
@@ -64,9 +73,23 @@ async function getAuthorData(slug: string, page = 1) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await getAuthorData(params.slug);
   const name = data?.author?.name || decodeURIComponent(params.slug);
+  const url = absoluteUrl(`/author/${params.slug}`);
+  const description = metaDescription(
+    data?.author?.bio || `اقرأ جميع مواد الكاتب ${name} المنشورة في مجلة التلغراف الأدبية والثقافية.`
+  );
   return {
-    title: `${name} | التلغراف`,
-    description: `اقرأ جميع مواد الكاتب ${name} في مجلة التلغراف`,
+    title: name,
+    description,
+    keywords: [name, `${name} التلغراف`, 'كاتب', 'مجلة التلغراف'],
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'profile',
+      url,
+      siteName: SITE_NAME,
+      locale: 'ar_IQ',
+      title: `${name} | ${SITE_NAME}`,
+      description,
+    },
   };
 }
 
@@ -79,7 +102,18 @@ export default async function AuthorPage({ params, searchParams }: Props) {
   const { author, articles, pagination } = data;
   const name = author?.name || decodeURIComponent(params.slug);
 
+  const authorUrl = absoluteUrl(`/author/${params.slug}`);
+  const personLd = buildPersonSchema({ ...author, name });
+  const breadcrumbLd = buildBreadcrumbSchema([
+    { name: 'الرئيسية', url: SITE_URL },
+    { name: 'الكتّاب', url: absoluteUrl('/author') },
+    { name, url: authorUrl },
+  ]);
+
   return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(personLd)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(breadcrumbLd)} />
     <div className="container mx-auto px-4 max-w-5xl py-8">
       {/* Breadcrumb */}
       <nav
@@ -177,5 +211,6 @@ export default async function AuthorPage({ params, searchParams }: Props) {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -8,6 +8,17 @@ import MastheadBanner from '@/components/layout/MastheadBanner';
 import Footer from '@/components/layout/Footer';
 import ScrollToTop from '@/components/ui/ScrollToTop';
 import { API_URL } from '@/lib/api';
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_NAME_EN,
+  SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  TWITTER_HANDLE,
+  buildOrganizationSchema,
+  buildWebsiteSchema,
+  jsonLdScript,
+} from '@/lib/utils/seoUtils';
 import './globals.css';
 
 // Nav categories rarely change — fetch via the Next Data Cache (revalidate)
@@ -58,21 +69,20 @@ const plexArabic = IBM_Plex_Sans_Arabic({
   preload: true,
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://altilgraf.com';
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'التلغراف - مجلة أدبية وثقافية',
-    template: '%s | التلغراف',
+    // The Latin brand rides along on the homepage title so "Al-Telegraph"
+    // queries have something to match; inner pages stay Arabic-only.
+    default: `التلغراف — مجلة أدبية وثقافية | ${SITE_NAME_EN}`,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    'التلغراف — مجلة ثقافية وأدبية تُعنى بالشعر والسرد والقراءات النقدية والفكر والحوار والترجمة',
-  keywords: ['أدب', 'شعر', 'سرد', 'ثقافة', 'نقد', 'ترجمة', 'التلغراف'],
-  authors: [{ name: 'التلغراف' }],
-  creator: 'التلغراف',
-  publisher: 'التلغراف',
-  applicationName: 'التلغراف',
+  description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  applicationName: SITE_NAME,
   generator: 'Next.js',
   referrer: 'origin-when-cross-origin',
   robots: {
@@ -90,33 +100,30 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ar_IQ',
     url: SITE_URL,
-    siteName: 'التلغراف',
-    title: 'التلغراف - مجلة أدبية وثقافية',
-    description:
-      'التلغراف — مجلة ثقافية وأدبية تُعنى بالشعر والسرد والقراءات النقدية والفكر والحوار والترجمة',
+    siteName: SITE_NAME,
+    title: `التلغراف — مجلة أدبية وثقافية | ${SITE_NAME_EN}`,
+    description: SITE_DESCRIPTION,
     images: [
       {
         url: `${SITE_URL}/og-default.jpg`,
         width: 1200,
         height: 630,
-        alt: 'التلغراف - مجلة أدبية وثقافية',
+        alt: `التلغراف — مجلة أدبية وثقافية | ${SITE_NAME_EN}`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@altilgraf',
-    creator: '@altilgraf',
-    title: 'التلغراف - مجلة أدبية وثقافية',
-    description: 'التلغراف — مجلة ثقافية وأدبية',
+    site: TWITTER_HANDLE,
+    creator: TWITTER_HANDLE,
+    title: `التلغراف — مجلة أدبية وثقافية | ${SITE_NAME_EN}`,
+    description: SITE_DESCRIPTION,
     images: [`${SITE_URL}/og-default.jpg`],
   },
-  alternates: {
-    canonical: SITE_URL,
-    languages: {
-      'ar': SITE_URL,
-    },
-  },
+  // NOTE: no `alternates.canonical` here on purpose. A canonical set in the
+  // root layout is inherited by every page that doesn't override it, which
+  // previously pointed the category, tag and author pages at the homepage and
+  // told Google not to index them. Each page declares its own.
   icons: {
     icon: [
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -161,6 +168,16 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL} />
+        {/* Who the publisher is, and how to search the site — this is what
+            Google reads for the brand panel and the sitelinks search box. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLdScript(buildOrganizationSchema())}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLdScript(buildWebsiteSchema())}
+        />
         {/* Marks JS availability so scroll-reveal styles only hide content when they can be revealed */}
         <script
           dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js')` }}

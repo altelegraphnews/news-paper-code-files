@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { absoluteUrl } from '@/lib/utils/seoUtils';
 
 export const metadata: Metadata = {
-  title: 'بث مباشر | التلغراف',
+  title: 'بث مباشر',
   description: 'تغطيات مباشرة وأحداث آنية من مجلة التلغراف.',
+  alternates: { canonical: absoluteUrl('/live') },
 };
 
 export default function LivePage() {

@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
 import Reveal from '@/components/ui/Reveal';
+import { absoluteUrl } from '@/lib/utils/seoUtils';
 
 export const metadata: Metadata = {
-  title: 'عن التلغراف | التلغراف',
+  title: 'عن التلغراف',
   description: 'تعرّف على مجلة التلغراف الثقافية والأدبية — رسالتها وأهدافها وتاريخها.',
+  alternates: { canonical: absoluteUrl('/about') },
 };
 
 const SECTIONS: [title: string, slug: string, desc: string][] = [

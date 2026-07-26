@@ -9,11 +9,15 @@ import Image from 'next/image';
 import { Article } from '@/lib/types';
 
 import { API_URL } from '@/lib/api';
+import { SITE_URL, SITE_NAME_EN, SITE_DESCRIPTION } from '@/lib/utils/seoUtils';
 import { avatarUrl } from '@/lib/utils/avatar';
 
 export const metadata: Metadata = {
-  title: 'التلغراف - مجلة أدبية وثقافية',
-  description: 'التلغراف — مجلة ثقافية وأدبية تُعنى بالشعر والسرد والقراءات النقدية والفكر والحوار والترجمة',
+  // `title: { absolute }` opts out of the « %s | التلغراف » template, which
+  // would otherwise print the brand twice on the homepage.
+  title: { absolute: `التلغراف — مجلة أدبية وثقافية | ${SITE_NAME_EN}` },
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: SITE_URL },
 };
 
 export const revalidate = 60; // ISR: revalidate every 60 seconds

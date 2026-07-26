@@ -8,6 +8,14 @@ import Reveal from '@/components/ui/Reveal';
 import { Article } from '@/lib/types';
 
 import { API_URL } from '@/lib/api';
+import {
+  SITE_URL,
+  SITE_NAME,
+  absoluteUrl,
+  metaDescription,
+  buildBreadcrumbSchema,
+  jsonLdScript,
+} from '@/lib/utils/seoUtils';
 
 interface Props {
   params: { slug: string[] };
@@ -30,10 +38,30 @@ async function getCategoryData(slug: string, page = 1) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   let data = await getCategoryData(params.slug[params.slug.length - 1]);
   if (!data && params.slug.length > 1) data = await getCategoryData(params.slug[0]);
-  if (!data) return { title: 'التصنيف غير موجود | التلغراف' };
+  if (!data) return { title: 'التصنيف غير موجود', robots: { index: false, follow: true } };
+
+  const { name, nameEn, description } = data.category;
+  // The layout already appends « | التلغراف », so the title must not repeat it.
+  // The English section name goes in the keywords, where it can be picked up
+  // without turning an Arabic description into a bilingual mess.
+  const url = absoluteUrl(`/category/${params.slug.join('/')}`);
+  const desc = metaDescription(
+    description || `أحدث مواد قسم ${name} في مجلة التلغراف الأدبية والثقافية — مقالات وقراءات ونصوص مختارة.`
+  );
+
   return {
-    title: `${data.category.name} | التلغراف`,
-    description: data.category.description || `أحدث مواد قسم ${data.category.name} في مجلة التلغراف`,
+    title: name,
+    description: desc,
+    keywords: [name, `${name} التلغراف`, 'مجلة التلغراف', ...(nameEn ? [nameEn, `Arabic ${nameEn}`] : [])],
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      url,
+      siteName: SITE_NAME,
+      locale: 'ar_IQ',
+      title: `${name} | ${SITE_NAME}`,
+      description: desc,
+    },
   };
 }
 
@@ -49,9 +77,17 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
   if (!data) notFound();
 
+  const categoryUrl = absoluteUrl(`/category/${params.slug.join('/')}`);
+  const breadcrumbLd = buildBreadcrumbSchema([
+    { name: 'الرئيسية', url: SITE_URL },
+    { name: data.category.name, url: categoryUrl },
+  ]);
+
   const { category, articles, pagination, subcategories } = data;
 
   return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(breadcrumbLd)} />
     <div className="container mx-auto px-4 max-w-7xl py-8">
       <PageHeader
         kicker="من أبواب التلغراف"
@@ -118,5 +154,6 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         </div>
       )}
     </div>
+    </>
   );
 }
