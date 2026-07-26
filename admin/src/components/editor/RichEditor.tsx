@@ -3,7 +3,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
-import Image from '@tiptap/extension-image'
+import ResizableImage from './ResizableImage'
 import Table from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableCell from '@tiptap/extension-table-cell'
@@ -81,8 +81,8 @@ const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEd
         openOnClick: false,
         HTMLAttributes: { class: 'text-red-600 underline' },
       }),
-      Image.configure({
-        HTMLAttributes: { class: 'max-w-full rounded-md my-4' },
+      ResizableImage.configure({
+        HTMLAttributes: { class: 'article-image' },
       }),
       Table.configure({ resizable: true }),
       TableRow,

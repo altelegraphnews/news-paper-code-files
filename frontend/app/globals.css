@@ -561,11 +561,19 @@ a {
 }
 
 .prose-arabic img {
-  width: 100%;
+  display: block;
+  max-width: 100%;
   height: auto;
   border-radius: 4px;
-  margin: 2rem 0;
+  margin: 2rem auto;
   box-shadow: var(--shadow-card);
+}
+
+/* A picture the writer sized in the editor carries a `width` attribute, and
+   nothing here may override it — that is what makes resizing stick. Anything
+   without one still fills the column, the way every article read before. */
+.prose-arabic img:not([width]) {
+  width: 100%;
 }
 
 .prose-arabic figure {
