@@ -67,6 +67,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl('/author'), changeFrequency: 'weekly', priority: 0.6 },
     { url: absoluteUrl('/contact'), changeFrequency: 'yearly', priority: 0.5 },
     { url: absoluteUrl('/live'), changeFrequency: 'weekly', priority: 0.4 },
+    { url: absoluteUrl('/privacy'), changeFrequency: 'yearly', priority: 0.3 },
+    { url: absoluteUrl('/terms'), changeFrequency: 'yearly', priority: 0.3 },
   ];
 
   // Articles carry the most search weight, and a real lastModified is what
