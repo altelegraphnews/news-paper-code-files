@@ -8,7 +8,17 @@ const { getHomepage, invalidateCache } = require('../services/homepageService');
 const { success } = require('../utils/responseHelper');
 const { verifyToken, requireAtLeast, requirePermission } = require('../middleware/auth');
 const { publicLimiter } = require('../middleware/rateLimiter');
+const { revalidateFrontend } = require('../utils/revalidate');
 const Article = require('../models/Article');
+
+// Clearing Redis only empties the API's own cache — the homepage itself is an
+// ISR page (s-maxage=60, stale-while-revalidate) sitting behind a CDN, so
+// without this it keeps serving the previous hero for at least another window.
+// Every write below pairs the two.
+const refreshHomepage = async () => {
+  await invalidateCache();
+  revalidateFrontend(['homepage'], ['/']);
+};
 
 // Helper: get/set a config key in siteconfigs collection
 const getConfig = async (key) => {
@@ -59,7 +69,7 @@ router.put('/hero', verifyToken, requirePermission('homepage.manage'), async (re
   try {
     const { articleId } = req.body;
     await setConfig('homepage:hero', articleId || null);
-    await invalidateCache();
+    await refreshHomepage();
     return success(res, null, 'تم تعيين الخبر الرئيسي');
   } catch (err) { next(err); }
 });
@@ -91,7 +101,7 @@ router.put('/hero-slides', verifyToken, requirePermission('homepage.manage'), as
     await setConfig('homepage:heroSlides', ids);
     // Keep the legacy key in step so anything still reading it sees slide one.
     await setConfig('homepage:hero', ids[0] || null);
-    await invalidateCache();
+    await refreshHomepage();
     return success(res, null, 'تم حفظ مقالات الواجهة');
   } catch (err) { next(err); }
 });
@@ -116,7 +126,7 @@ router.put('/featured', verifyToken, requirePermission('homepage.manage'), async
   try {
     const { articleIds } = req.body;
     await setConfig('homepage:featured', Array.isArray(articleIds) ? articleIds.slice(0, 6) : []);
-    await invalidateCache();
+    await refreshHomepage();
     return success(res, null, 'تم حفظ المقالات المميزة');
   } catch (err) { next(err); }
 });
@@ -124,7 +134,7 @@ router.put('/featured', verifyToken, requirePermission('homepage.manage'), async
 // POST /homepage/invalidate — admin: force cache bust
 router.post('/invalidate', verifyToken, requirePermission('homepage.manage'), async (req, res, next) => {
   try {
-    await invalidateCache();
+    await refreshHomepage();
     return success(res, null, 'تم تحديث الصفحة الرئيسية');
   } catch (err) {
     next(err);
@@ -133,7 +143,6 @@ router.post('/invalidate', verifyToken, requirePermission('homepage.manage'), as
 
 // ─── Homepage layout/text settings ──────────────────────────────────────────
 const { mergeHomepageSettings } = require('../config/homepageDefaults');
-const { revalidateFrontend } = require('../utils/revalidate');
 
 // GET /homepage/settings — public (the site's layout reads masthead etc.)
 router.get('/settings', async (req, res, next) => {
@@ -149,7 +158,7 @@ router.put('/settings', verifyToken, requirePermission('homepage.manage'), async
     const merged = mergeHomepageSettings(req.body || {});
     await setConfig('homepage:settings', merged);
     await invalidateCache();
-    // Refresh the site immediately: homepage data + masthead (layout) + nav
+    // Masthead (layout) and nav ride along with the homepage data here.
     revalidateFrontend(['homepage', 'site-settings', 'nav'], ['/']);
     return success(res, merged, 'تم حفظ إعدادات الصفحة الرئيسية');
   } catch (err) { next(err); }
