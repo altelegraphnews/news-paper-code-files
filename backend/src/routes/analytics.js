@@ -13,7 +13,20 @@ const { success } = require('../utils/responseHelper');
 const { verifyToken, requireAtLeast, requirePermission, optionalAuth } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const { publicLimiter } = require('../middleware/rateLimiter');
+const { isStaffRole } = require('../config/permissions');
 const logger = require('../utils/logger');
+
+/**
+ * Is this request the newsroom reading its own site?
+ *
+ * Two signals, because neither covers everything on its own: a live session
+ * (optionalAuth resolved a token from the header or the access_token cookie),
+ * or the long-lived marker cookie login drops for staff accounts — the access
+ * token expires after 15 minutes, and staff read the public site for much
+ * longer than that between dashboard visits.
+ */
+const isStaffRequest = (req) =>
+  Boolean(req.user && isStaffRole(req.user.role)) || req.cookies?.ate_staff === '1';
 
 // POST /analytics/event — fire-and-forget tracking (fixed validate call)
 router.post('/event', publicLimiter, optionalAuth, validate([
@@ -26,6 +39,12 @@ router.post('/event', publicLimiter, optionalAuth, validate([
     const { type, articleId, sessionId, source, metadata } = req.body;
     const userId = req.user?._id;
     res.status(202).json({ success: true, message: 'تم التسجيل' });
+
+    // Staff reading their own site is not audience behaviour. Their views are
+    // dropped entirely rather than logged-and-filtered, so the number on the
+    // dashboard and the number in the raw event log agree.
+    if (isStaffRequest(req)) return;
+
     trackEvent({ type, articleId, userId, sessionId, source, metadata }).catch(() => {});
   } catch (err) { next(err); }
 });

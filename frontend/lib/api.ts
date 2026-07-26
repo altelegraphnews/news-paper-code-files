@@ -101,7 +101,8 @@ export const fetchMostReadArticles = async (limit = 5): Promise<Article[]> => {
 // This is kept for explicit client-side tracking via the analytics event endpoint.
 export const trackArticleView = async (articleId: string): Promise<void> => {
   try {
-    await apiClient.post('/analytics/event', { type: 'article_view', articleId });
+    // withCredentials so staff browsers are recognised and skipped, same as ViewTracker.
+    await apiClient.post('/analytics/event', { type: 'article_view', articleId }, { withCredentials: true });
   } catch { /* non-critical */ }
 };
 

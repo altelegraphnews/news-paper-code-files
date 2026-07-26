@@ -9,7 +9,7 @@ const {
   getRefreshTokenExpiry,
 } = require('../middleware/auth');
 const { getEmailQueue } = require('../jobs/queue');
-const { effectivePermissions } = require('../config/permissions');
+const { effectivePermissions, isStaffRole } = require('../config/permissions');
 const logger = require('../utils/logger');
 const config = require('../config/env');
 
@@ -27,6 +27,23 @@ const accessCookieOptions = {
   secure: config.env === 'production',
   sameSite: config.env === 'production' ? 'strict' : 'lax',
   maxAge: 15 * 60 * 1000, // 15 minutes
+};
+
+// Marks this browser as belonging to the newsroom so its own reading is left
+// out of article view counts. Deliberately long-lived and separate from
+// access_token, which expires after 15 minutes — staff browse the public site
+// for far longer than that between dashboard visits.
+//
+// It is not a credential: it grants nothing, and the worst a forged one can do
+// is exclude that browser from analytics. The view endpoint still trusts a real
+// token first and only falls back to this marker.
+const STAFF_COOKIE = 'ate_staff';
+
+const staffCookieOptions = {
+  httpOnly: true,
+  secure: config.env === 'production',
+  sameSite: 'lax',
+  maxAge: 180 * 24 * 60 * 60 * 1000, // 180 days
 };
 
 /**
@@ -76,6 +93,11 @@ const login = async (req, res, next) => {
     // Set HTTP-only cookies
     res.cookie('refresh_token', refreshToken, refreshCookieOptions);
     res.cookie('access_token', accessToken, accessCookieOptions);
+    if (isStaffRole(user.role)) {
+      res.cookie(STAFF_COOKIE, '1', staffCookieOptions);
+    } else {
+      res.clearCookie(STAFF_COOKIE);
+    }
 
     const userData = {
       _id: user._id,
@@ -188,6 +210,7 @@ const logout = async (req, res, next) => {
 
     res.clearCookie('refresh_token', { path: '/api/v1/auth' });
     res.clearCookie('access_token');
+    res.clearCookie(STAFF_COOKIE);
 
     return success(res, null, 'تم تسجيل الخروج بنجاح');
   } catch (error) {
@@ -207,6 +230,7 @@ const logoutAll = async (req, res, next) => {
 
     res.clearCookie('refresh_token', { path: '/api/v1/auth' });
     res.clearCookie('access_token');
+    res.clearCookie(STAFF_COOKIE);
 
     return success(res, null, 'تم تسجيل الخروج من جميع الأجهزة');
   } catch (error) {

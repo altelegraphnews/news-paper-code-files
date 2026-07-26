@@ -84,6 +84,16 @@ function effectivePermissions(role, overrides) {
   return result;
 }
 
+/**
+ * Roles that belong to the newsroom rather than the audience. Their own
+ * reading is not audience behaviour, so it is kept out of view counts.
+ */
+const STAFF_ROLES = ['author', 'editor', 'admin', 'super_admin'];
+
+function isStaffRole(role) {
+  return STAFF_ROLES.includes(role);
+}
+
 function hasPermission(user, key) {
   if (!user) return false;
   if (user.role === 'super_admin') return true;
@@ -91,4 +101,11 @@ function hasPermission(user, key) {
   return perms[key] === true;
 }
 
-module.exports = { PERMISSION_KEYS, ROLE_DEFAULTS, effectivePermissions, hasPermission };
+module.exports = {
+  PERMISSION_KEYS,
+  ROLE_DEFAULTS,
+  STAFF_ROLES,
+  isStaffRole,
+  effectivePermissions,
+  hasPermission,
+};
