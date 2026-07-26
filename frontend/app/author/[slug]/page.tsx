@@ -17,7 +17,7 @@ import {
   buildBreadcrumbSchema,
   jsonLdScript,
 } from '@/lib/utils/seoUtils';
-import { avatarUrl } from '@/lib/utils/avatar';
+import { avatarUrl, avatarSrc } from '@/lib/utils/avatar';
 
 interface Props {
   params: { slug: string };
@@ -142,7 +142,7 @@ export default async function AuthorPage({ params, searchParams }: Props) {
         <div className="relative flex items-center gap-6 flex-wrap">
           {avatarUrl(author?.avatar) ? (
             <div className="relative w-24 h-24 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-accent/50 ring-offset-2 ring-offset-[color:var(--color-surface)]">
-              <Image src={avatarUrl(author?.avatar)!} alt={name} fill className="object-cover" sizes="96px" />
+              <Image src={avatarSrc(author?.avatar, 96)!} alt={name} fill unoptimized className="object-cover" sizes="96px" />
             </div>
           ) : (
             <div className="w-24 h-24 rounded-full bg-accent/15 ring-2 ring-accent/50 ring-offset-2 ring-offset-[color:var(--color-surface)] flex items-center justify-center flex-shrink-0">

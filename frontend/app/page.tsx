@@ -10,7 +10,7 @@ import { Article } from '@/lib/types';
 
 import { API_URL } from '@/lib/api';
 import { SITE_URL, SITE_NAME_EN, SITE_DESCRIPTION } from '@/lib/utils/seoUtils';
-import { avatarUrl } from '@/lib/utils/avatar';
+import { avatarUrl, avatarSrc } from '@/lib/utils/avatar';
 
 export const metadata: Metadata = {
   // `title: { absolute }` opts out of the « %s | التلغراف » template, which
@@ -187,7 +187,7 @@ function OpinionSection({ articles, title = 'رأي وتحليل' }: { articles:
                 <div className="flex items-center justify-center gap-3">
                   {avatarUrl(article.author?.avatar) ? (
                     <span className="relative w-9 h-9 rounded-full overflow-hidden ring-1 ring-accent/40">
-                      <Image src={avatarUrl(article.author?.avatar)!} alt={article.author.name} fill className="object-cover" sizes="36px" />
+                      <Image src={avatarSrc(article.author?.avatar, 36)!} alt={article.author.name} fill unoptimized className="object-cover" sizes="36px" />
                     </span>
                   ) : (
                     <span className="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center ring-1 ring-accent/40">

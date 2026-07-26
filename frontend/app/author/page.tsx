@@ -5,7 +5,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import Reveal from '@/components/ui/Reveal';
 
 import { API_URL } from '@/lib/api';
-import { avatarUrl } from '@/lib/utils/avatar';
+import { avatarUrl, avatarSrc } from '@/lib/utils/avatar';
 import { absoluteUrl } from '@/lib/utils/seoUtils';
 
 export const metadata: Metadata = {
@@ -67,7 +67,7 @@ export default async function AuthorsIndexPage() {
               >
                 {avatarUrl(author.avatar) ? (
                   <span className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-accent/40 transition-shadow duration-300 group-hover:ring-2 group-hover:ring-accent/70">
-                    <Image src={avatarUrl(author.avatar)!} alt={author.name} fill className="object-cover" sizes="64px" />
+                    <Image src={avatarSrc(author.avatar, 64)!} alt={author.name} fill unoptimized className="object-cover" sizes="64px" />
                   </span>
                 ) : (
                   <span className="w-16 h-16 rounded-full bg-accent/15 ring-1 ring-accent/40 flex items-center justify-center flex-shrink-0 transition-shadow duration-300 group-hover:ring-2 group-hover:ring-accent/70">

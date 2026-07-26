@@ -12,7 +12,7 @@ import ReadingProgress from '@/components/ui/ReadingProgress';
 import ViewTracker from '@/components/article/ViewTracker';
 import { Article } from '@/lib/types';
 import { formatArabicDateTime } from '@/lib/utils/dateUtils';
-import { avatarUrl } from '@/lib/utils/avatar';
+import { avatarUrl, avatarSrc } from '@/lib/utils/avatar';
 
 import { API_URL } from '@/lib/api';
 import {
@@ -267,12 +267,12 @@ export default async function ArticlePage({ params }: Props) {
             <span className="absolute -top-px right-6 morse-line w-20" aria-hidden="true" />
             <div className="flex items-start gap-4">
               {avatarUrl(article.author.avatar) ? (
-                <div className="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-accent/40">
-                  <Image src={avatarUrl(article.author.avatar)!} alt={article.author.name} fill className="object-cover" sizes="64px" />
+                <div className="relative w-24 h-24 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-accent/40">
+                  <Image src={avatarSrc(article.author.avatar, 96)!} alt={article.author.name} fill unoptimized className="object-cover" sizes="96px" />
                 </div>
               ) : (
-                <div className="w-16 h-16 rounded-full bg-accent/15 ring-1 ring-accent/40 flex items-center justify-center flex-shrink-0">
-                  <span className="text-accent-700 dark:text-accent-300 font-heading font-bold text-2xl">{article.author.name?.charAt(0)}</span>
+                <div className="w-24 h-24 rounded-full bg-accent/15 ring-1 ring-accent/40 flex items-center justify-center flex-shrink-0">
+                  <span className="text-accent-700 dark:text-accent-300 font-heading font-bold text-3xl">{article.author.name?.charAt(0)}</span>
                 </div>
               )}
               <div>
