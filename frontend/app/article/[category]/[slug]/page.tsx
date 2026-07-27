@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import ArticleBody from '@/components/article/ArticleBody';
 import ShareButtons from '@/components/article/ShareButtons';
+import Comments from '@/components/article/Comments';
 import RelatedArticles from '@/components/article/RelatedArticles';
 import Badge from '@/components/ui/Badge';
 import ReadingProgress from '@/components/ui/ReadingProgress';
@@ -339,6 +340,9 @@ export default async function ArticlePage({ params }: Props) {
             آخر تحديث: {formatArabicDateTime(article.updatedAt)}
           </p>
         )}
+
+        {/* Reader comments — client-side, since the page itself is ISR-cached */}
+        <Comments articleId={article._id} commentsEnabled={article.commentsEnabled !== false} />
       </article>
 
       {/* Related articles — streamed after the article so it never blocks the

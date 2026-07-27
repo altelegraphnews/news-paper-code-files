@@ -195,14 +195,16 @@ export const fetchTickers = async (): Promise<Ticker[]> => {
   return response.data.data;
 };
 
-// Comments — GET /comments?articleId=:id
+// Comments — GET /comments?articleId=:id returns approved top-level comments
+// with their replies nested one level deep.
 export const fetchComments = async (articleId: string): Promise<Comment[]> => {
   const response = await apiClient.get<ApiResponse<Comment[]>>('/comments', {
-    params: { articleId },
+    params: { articleId, limit: 50 },
   });
   return response.data.data;
 };
 
+/** Guests must supply guestName; the comment lands in moderation as `pending`. */
 export const postComment = async (data: CommentFormData): Promise<Comment> => {
   const response = await apiClient.post<ApiResponse<Comment>>('/comments', data);
   return response.data.data;

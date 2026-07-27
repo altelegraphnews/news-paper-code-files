@@ -65,18 +65,23 @@ export interface Author {
 
 export interface Comment {
   _id: string;
-  articleId: string;
-  parentId?: string;
-  author: {
+  article: string;
+  parent?: string | null;
+  depth?: number;
+  /** Set when a signed-in writer comments; guests use guestName instead. */
+  author?: {
+    _id?: string;
     name: string;
-    email?: string;
-    avatar?: string;
-  };
+    avatar?: string | { url?: string };
+  } | null;
+  guestName?: string;
   content: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'spam';
+  likes?: number;
+  isEdited?: boolean;
   createdAt: string;
+  /** Only top-level comments carry replies — the API nests one level deep. */
   replies?: Comment[];
-  likesCount?: number;
 }
 
 export interface Ticker {
@@ -188,11 +193,11 @@ export interface ArticleCardVariant {
 }
 
 export interface CommentFormData {
-  name: string;
-  email: string;
+  article: string;
   content: string;
-  parentId?: string;
-  honeypot?: string;
+  parent?: string;
+  guestName?: string;
+  guestEmail?: string;
 }
 
 export interface NewsletterFormData {
