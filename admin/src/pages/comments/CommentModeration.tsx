@@ -67,6 +67,11 @@ export default function CommentModeration() {
 
   const getId = (c: Comment) => (c as any)._id || c.id
 
+  // The API sends a populated `author` for signed-in writers and `guestName`
+  // for readers — there is no `authorName` field, so every commenter used to
+  // render as «زائر».
+  const commenterName = (c: Comment) => c.author?.name || c.guestName || 'زائر'
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
   }
@@ -269,10 +274,15 @@ export default function CommentModeration() {
                     {/* Author + meta */}
                     <div className="flex items-center flex-wrap gap-2">
                       <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                        {comment.authorName || 'زائر'}
+                        {commenterName(comment)}
                       </span>
-                      {comment.authorEmail && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{comment.authorEmail}</span>
+                      {comment.guestEmail && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">{comment.guestEmail}</span>
+                      )}
+                      {comment.author && (
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-sm bg-gold-100 dark:bg-gold-900/25 text-gold-800 dark:text-gold-300">
+                          من المجلة
+                        </span>
                       )}
                       <Badge variant={STATUS_VARIANTS[comment.status]} size="sm">
                         {STATUS_LABELS[comment.status] || comment.status}
