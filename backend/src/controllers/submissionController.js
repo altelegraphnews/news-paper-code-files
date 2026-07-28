@@ -48,6 +48,11 @@ const parseFrom = (from) => {
   return { email: String(from).trim(), name: '' };
 };
 
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[<>&"']/g, (c) => (
+    { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+
 // Forward a copy of the submission to the configured inbox (e.g. Gmail), with
 // the original attachments and a link back to the draft. Reply-to is the
 // writer so the editor can respond to them straight from their inbox.
@@ -55,7 +60,14 @@ const forwardToInbox = async ({ email, fromEmail, fromName, attachments, article
   const to = config.submissions.forwardTo;
   if (!to) return;
 
-  const sender = fromName ? `${fromName} <${fromEmail}>` : (fromEmail || 'غير معروف');
+  // The sender's name and address come from an unauthenticated submitter and
+  // land in an HTML email read by editors — escape them so they cannot inject
+  // markup (e.g. a lookalike link) into the banner alongside the real one.
+  // As a bonus this makes the address visible again: unescaped, the `<…>`
+  // wrapper was parsed as a tag and never rendered.
+  const sender = fromName
+    ? `${escapeHtml(fromName)} &lt;${escapeHtml(fromEmail)}&gt;`
+    : (escapeHtml(fromEmail) || 'غير معروف');
   const editUrl = `${config.frontend.adminUrl || 'https://admin.al-telegraph.com'}/articles/${article._id}/edit`;
   const banner =
     `<div style="font-family:sans-serif;background:#f6f3ec;border:1px solid #e5ddc8;border-radius:8px;padding:14px;margin-bottom:16px" dir="rtl">
@@ -64,13 +76,13 @@ const forwardToInbox = async ({ email, fromEmail, fromName, attachments, article
        <div style="font-size:13px;color:#555">أُنشئت كمسودة قيد المراجعة:
          <a href="${editUrl}" style="color:#8a6d2f">فتح المسودة للتحرير ↗</a></div>
      </div>`;
-  const original = email.html || (email.text ? `<pre style="white-space:pre-wrap;font-family:sans-serif">${email.text.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</pre>` : '<i>(لا يوجد نص)</i>');
+  const original = email.html || (email.text ? `<pre style="white-space:pre-wrap;font-family:sans-serif">${escapeHtml(email.text)}</pre>` : '<i>(لا يوجد نص)</i>');
 
   await resend.sendEmail({
     from: config.submissions.forwardFrom,
     to,
     replyTo: fromEmail || undefined,
-    subject: `[مساهمة] ${email.subject || '(بدون عنوان)'}`,
+    subject: `[مساهمة] ${String(email.subject || '(بدون عنوان)').replace(/[\r\n]/g, ' ')}`,
     html: banner + original,
     attachments,
   });

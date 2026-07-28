@@ -6,6 +6,45 @@ const createDOMPurify = require('isomorphic-dompurify');
 const DOMPurify = createDOMPurify;
 
 /**
+ * Hosts an <iframe> may point at.
+ *
+ * `iframe` is allowed so editors can embed video, but DOMPurify attribute
+ * allowlists are not per-tag: allowing `src` at all allowed it on iframes too,
+ * with no host restriction. Article HTML can originate from an unauthenticated
+ * inbound email, and the payload is invisible in the TipTap editor during
+ * review, so an arbitrary frame could reach a published page and render a
+ * full-width attacker-controlled document under our own domain.
+ */
+const ALLOWED_IFRAME_HOSTS = [
+  'youtube.com',
+  'www.youtube.com',
+  'youtube-nocookie.com',
+  'www.youtube-nocookie.com',
+  'player.vimeo.com',
+  'w.soundcloud.com',
+  'open.spotify.com',
+];
+
+// Runs after attributes are cleaned, so `src` here is already protocol-checked
+// by DOMPurify (javascript:/data: are gone). Anything not on the list — including
+// a relative or protocol-relative src, which resolves to the sentinel host — is
+// dropped entirely rather than left with a stripped attribute.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (!node.tagName || node.tagName.toUpperCase() !== 'IFRAME') return;
+
+  let hostname = '';
+  try {
+    hostname = new URL(node.getAttribute('src') || '', 'https://invalid.example').hostname;
+  } catch {
+    hostname = '';
+  }
+
+  if (!ALLOWED_IFRAME_HOSTS.includes(hostname.toLowerCase())) {
+    node.parentNode?.removeChild(node);
+  }
+});
+
+/**
  * Allowed HTML tags for article content
  */
 const ALLOWED_TAGS = [
@@ -143,6 +182,7 @@ const validateContent = (content) => {
 };
 
 module.exports = {
+  ALLOWED_IFRAME_HOSTS,
   sanitizeHtml,
   sanitizeText,
   sanitizeExcerpt,

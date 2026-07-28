@@ -22,8 +22,12 @@ const config = {
   },
 
   jwt: {
-    secret: process.env.JWT_SECRET || 'alwid-dev-access-secret-CHANGE-IN-PRODUCTION',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'alwid-dev-refresh-secret-CHANGE-IN-PRODUCTION',
+    // required() throws in production rather than falling back. These literals
+    // are published in the repo: if the deploy ever lost JWT_SECRET, anyone
+    // could forge a super_admin token, since verifyToken looks the user up by
+    // the id in the payload and user ids are public via /users/authors.
+    secret: required('JWT_SECRET') || 'alwid-dev-access-secret-CHANGE-IN-PRODUCTION',
+    refreshSecret: required('JWT_REFRESH_SECRET') || 'alwid-dev-refresh-secret-CHANGE-IN-PRODUCTION',
     accessExpires: process.env.JWT_ACCESS_EXPIRES || '15m',
     refreshExpires: process.env.JWT_REFRESH_EXPIRES || '7d',
     resetExpires: process.env.JWT_RESET_EXPIRES || '1h',

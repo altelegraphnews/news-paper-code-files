@@ -193,7 +193,9 @@ const ingestSubmission = async (p) => {
     review: { submittedAt: new Date() },
     readingTimeMin: calculateReadingTime(content),
     ogImage: cover ? { url: cover.url, publicId: cover.publicId } : {},
-    source: { name: `${sourceLabel} — ${p.fromEmail || ''}`.trim() },
+    // `source` is rendered publicly, so it gets the label only. The address
+    // lives in `submission.senderEmail`, which is deselected by default.
+    source: { name: sourceLabel },
     submission: {
       via,
       senderEmail: p.fromEmail,

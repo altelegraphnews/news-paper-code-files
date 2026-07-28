@@ -6,6 +6,10 @@ const { success, created, paginated, errors } = require('../utils/responseHelper
 const { generateUniqueSlug } = require('../utils/slugGenerator');
 const { calculateReadingTime, sanitizeExcerpt } = require('../utils/readingTime');
 const { sanitizeHtml } = require('../utils/sanitizer');
+
+// Mirrors the enum on the Article schema. Used to validate a caller-supplied
+// ?status= before it is allowed anywhere near the query filter.
+const ARTICLE_STATUSES = ['draft', 'pending', 'rejected', 'scheduled', 'published', 'archived'];
 const { logAction } = require('../middleware/auditLogger');
 const { getSitemapQueue, getNotificationQueue } = require('../jobs/queue');
 const searchService = require('../services/searchService');
@@ -36,32 +40,39 @@ const getArticles = async (req, res, next) => {
 
     const filter = { isDeleted: { $ne: true } };
 
-    // Permission-based status filtering
-    const canEditAll = req.user?.can?.('articles.editAll');
-
-    if (status) {
-      filter.status = status;
-    } else if (!canEditAll) {
-      filter.status = 'published';
-    }
-
-    if (category) filter.category = category;
-    if (author) filter.author = author;
-    if (tag) filter.tags = { $in: [tag] };
+    // Coerce to strings: a query value like ?category[$ne]= arrives as an
+    // object and would otherwise reach Mongo as a query operator.
+    if (category) filter.category = String(category);
+    if (author) filter.author = String(author);
+    if (tag) filter.tags = { $in: [String(tag)] };
     if (isFeatured === 'true') filter.isFeatured = true;
     if (isBreaking === 'true') filter.isBreaking = true;
+
+    // Permission-based status filtering.
+    //
+    // What a caller may see is decided here and nowhere else, and every branch
+    // assigns filter.status — an anonymous request can only ever get published
+    // articles no matter what it asks for. The requested status is matched
+    // against the enum first, so an object cannot reach the filter either.
+    // This block runs after the plain filters above so that scoping a writer to
+    // their own work overrides any author supplied in the query string.
+    const canEditAll = req.user?.can?.('articles.editAll');
+    const requestedStatus = ARTICLE_STATUSES.includes(status) ? status : null;
+
+    if (canEditAll) {
+      if (requestedStatus) filter.status = requestedStatus;
+    } else if (req.user && requestedStatus && requestedStatus !== 'published') {
+      // Writers may list their own unpublished work, never anyone else's.
+      filter.status = requestedStatus;
+      filter.author = req.user._id;
+    } else {
+      filter.status = 'published';
+    }
 
     // "mine" — writer dashboard listing of own articles in any status
     if (req.query.mine === 'true' && req.user) {
       filter.author = req.user._id;
-      if (!status) delete filter.status;
-    }
-
-    // Writers can only see their own non-published articles
-    if (req.user && !canEditAll) {
-      if (filter.status && filter.status !== 'published') {
-        filter.author = req.user._id;
-      }
+      if (!requestedStatus) delete filter.status;
     }
 
     if (search) {
@@ -82,7 +93,7 @@ const getArticles = async (req, res, next) => {
         .limit(limitNum)
         .populate('category', 'name slug color')
         .populate('author', 'name avatar slug')
-        .select('-content -revisions')
+        .select(canEditAll ? '-content -revisions +submission' : '-content -revisions')
         .lean(),
       Article.countDocuments(filter),
     ]);
@@ -940,9 +951,19 @@ const restoreRevision = async (req, res, next) => {
       .select('+revisions');
     if (!article) return errors.notFound(res, 'المقال');
 
+    // Same gate as updateArticle: restoring a revision rewrites the live body,
+    // so it needs the same rights. Without this a writer could stage content in
+    // a revision, get an innocuous version approved, then restore the staged
+    // one onto the published article — an edit PUT would have refused.
+    const canEditAll = req.user.can('articles.editAll');
     const isOwner = article.author.toString() === req.user._id.toString();
-    if (!isOwner && !req.user.can('articles.editAll')) {
-      return errors.forbidden(res);
+
+    if (!canEditAll && !(isOwner && req.user.can('articles.editOwn'))) {
+      return errors.forbidden(res, 'لا يمكنك تعديل هذا المقال');
+    }
+
+    if (article.status === 'published' && !req.user.can('articles.publish')) {
+      return errors.forbidden(res, 'لا يمكن تعديل مقال منشور — تواصل مع المحرر');
     }
 
     const revision = article.revisions.id(revisionId);
@@ -960,7 +981,8 @@ const restoreRevision = async (req, res, next) => {
 
     article.title = revision.title || article.title;
     article.subtitle = revision.subtitle || article.subtitle;
-    article.content = revision.content;
+    // Re-sanitize rather than trusting the stored snapshot.
+    article.content = sanitizeHtml(revision.content);
     article.readingTimeMin = calculateReadingTime(article.content);
 
     if (article.revisions.length > 20) {

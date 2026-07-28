@@ -40,6 +40,10 @@ const commentSchema = new mongoose.Schema(
       type: String,
       trim: true,
       lowercase: true,
+      // Readers are told this is not published, and the public comment feed
+      // returns whole documents — keep it off every response by default.
+      // Moderation asks for it explicitly with .select('+guestEmail').
+      select: false,
     },
     content: {
       type: String,

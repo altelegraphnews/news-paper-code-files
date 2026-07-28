@@ -43,6 +43,8 @@ const getComments = async (req, res, next) => {
         .limit(limitNum)
         .populate('author', 'name avatar role')
         .populate('article', 'title slug')
+        // Moderators see the commenter's email; the public feed never does.
+        .select(isAdmin ? '+guestEmail' : '')
         .lean(),
       Comment.countDocuments(filter),
     ]);

@@ -14,6 +14,19 @@ const revisionSchema = new mongoose.Schema(
   { _id: true }
 );
 
+const submissionSchema = new mongoose.Schema(
+  {
+    via: { type: String, enum: ['email', 'form'] },
+    senderEmail: String,
+    senderName: String,
+    resendEmailId: String,
+    receivedAt: Date,
+    hadDocx: { type: Boolean, default: false },
+    authorMatched: { type: Boolean, default: false },
+  },
+  { _id: false }
+);
+
 const articleSchema = new mongoose.Schema(
   {
     title: {
@@ -185,16 +198,14 @@ const articleSchema = new mongoose.Schema(
       name: String,
       url: String,
     },
-    // Set when the article was created from a reader submission
-    submission: {
-      via: { type: String, enum: ['email', 'form'] },
-      senderEmail: String,
-      senderName: String,
-      resendEmailId: String,
-      receivedAt: Date,
-      hadDocx: { type: Boolean, default: false },
-      authorMatched: { type: Boolean, default: false },
-    },
+    // Set when the article was created from a reader submission.
+    // This is the submitter's personal data and it survives publication, while
+    // every public read path uses an exclusion projection — so the whole
+    // subdocument is deselected and the review queue asks for it back with
+    // .select('+submission'). Declared as a sub-schema rather than an inline
+    // object so that one `+submission` covers every field: `select: false` on
+    // individual subpaths is not re-included by the parent path alone.
+    submission: { type: submissionSchema, select: false },
     language: {
       type: String,
       default: 'ar',

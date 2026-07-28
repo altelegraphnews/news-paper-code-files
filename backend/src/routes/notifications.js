@@ -33,10 +33,15 @@ router.post('/subscribe', publicLimiter, optionalAuth, validate([
 });
 
 // DELETE /notifications/unsubscribe
-router.delete('/unsubscribe', publicLimiter, async (req, res, next) => {
+// Validated like /subscribe: without it a JSON object body such as
+// {"endpoint":{"$gt":""}} passed the truthiness check and reached Mongo as a
+// query operator, letting an unauthenticated caller delete other people's
+// subscriptions one request at a time.
+router.delete('/unsubscribe', publicLimiter, validate([
+  body('endpoint').isURL().withMessage('endpoint غير صالح'),
+]), async (req, res, next) => {
   try {
-    const { endpoint } = req.body;
-    if (!endpoint) return errors.badRequest(res, 'endpoint مطلوب');
+    const endpoint = String(req.body.endpoint);
     await PushSubscription.deleteOne({ endpoint });
     return success(res, null, 'تم إلغاء الاشتراك');
   } catch (err) { next(err); }
