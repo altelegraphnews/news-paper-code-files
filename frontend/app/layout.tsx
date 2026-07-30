@@ -168,6 +168,14 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL} />
+        {/* Facebook's Sharing Debugger flags a missing fb:app_id, and the Share
+            Dialog requires one. Written by hand rather than through Next's
+            `other` metadata field because that emits <meta name>, while
+            Facebook's parser looks for <meta property>. Rendered only when the
+            id is configured — an empty fb:app_id is worse than none. */}
+        {process.env.NEXT_PUBLIC_FACEBOOK_APP_ID ? (
+          <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FACEBOOK_APP_ID} />
+        ) : null}
         {/* Who the publisher is, and how to search the site — this is what
             Google reads for the brand panel and the sitelinks search box. */}
         <script
