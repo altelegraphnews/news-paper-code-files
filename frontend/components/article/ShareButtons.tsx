@@ -26,6 +26,33 @@ export default function ShareButtons({ title, url, className = '' }: ShareButton
     handleCopyLink();
   };
 
+  /**
+   * Open the network's share page in a sized popup rather than a tab.
+   *
+   * Facebook's sharer validates the referring page, so these links must not
+   * carry rel="noreferrer" — with no Referer its dialog opens but the Post
+   * button spins and never completes. rel="noopener" is kept, which is what
+   * actually protects against the opened page touching window.opener.
+   *
+   * The href stays on the anchor so middle-click, right-click and no-JS all
+   * still work; this only upgrades a plain left-click.
+   */
+  const openShare = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    const w = 600;
+    const h = 560;
+    const left = window.screenX + Math.max(0, (window.outerWidth - w) / 2);
+    const top = window.screenY + Math.max(0, (window.outerHeight - h) / 2);
+    const popup = window.open(
+      href,
+      'share',
+      `noopener,width=${w},height=${h},left=${Math.round(left)},top=${Math.round(top)}`
+    );
+    // Popup blocked — fall back to a normal navigation.
+    if (!popup) window.open(href, '_blank', 'noopener');
+  };
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -103,7 +130,8 @@ export default function ShareButtons({ title, url, className = '' }: ShareButton
             key={link.name}
             href={link.href}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener"
+            onClick={(e) => openShare(e, link.href)}
             title={`مشاركة على ${link.name}`}
             className={`flex items-center gap-1.5 px-3 py-2 text-white text-sm rounded-lg transition-colors ${link.color}`}
           >

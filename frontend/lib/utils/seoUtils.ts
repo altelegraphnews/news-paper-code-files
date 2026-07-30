@@ -108,6 +108,34 @@ export function getTagUrl(tag: string): string {
 }
 
 /**
+ * Social preview image, cropped to the 1.91:1 card Facebook, X and LinkedIn
+ * expect.
+ *
+ * The dimensions we advertise have to be the dimensions we actually serve.
+ * Article covers are whatever size they were uploaded — one live example is
+ * 549×364 — so declaring a flat 1200×630 told Facebook to wait for an image
+ * that never arrived, and its share dialog sat spinning. Cloudinary crops to
+ * the real thing; non-Cloudinary sources return unchanged and the caller then
+ * declares no dimensions rather than guessing.
+ */
+export const OG_IMAGE_WIDTH = 1200;
+export const OG_IMAGE_HEIGHT = 630;
+
+export function ogImageSrc(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+  return url.replace(
+    '/upload/',
+    `/upload/f_auto,q_auto,c_fill,g_auto,w_${OG_IMAGE_WIDTH},h_${OG_IMAGE_HEIGHT}/`
+  );
+}
+
+/** True only when we control the crop and therefore know the size. */
+export function isCloudinary(url?: string | null): boolean {
+  return Boolean(url && url.includes('res.cloudinary.com') && url.includes('/upload/'));
+}
+
+/**
  * Google renders roughly 155–160 characters of a description. Category blurbs
  * are written in markdown, so the markers are stripped too — otherwise the
  * search result reads «**الشعر** بابٌ للقصيدة…».

@@ -21,6 +21,10 @@ import {
   TWITTER_HANDLE,
   absoluteUrl,
   metaDescription,
+  ogImageSrc,
+  isCloudinary,
+  OG_IMAGE_WIDTH,
+  OG_IMAGE_HEIGHT,
   buildArticleSchema,
   buildBreadcrumbSchema,
   jsonLdScript,
@@ -71,8 +75,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = article.seo?.title || article.title;
   const description = metaDescription(article.seo?.description || article.excerpt);
   const keywords = article.seo?.keywords?.length ? article.seo.keywords : article.tags;
-  const image = article.ogImage?.url;
+  // Serve the crop we advertise — see ogImageSrc.
+  const image = ogImageSrc(article.ogImage?.url);
   const imageAlt = article.ogImage?.alt || article.title;
+  const knownSize = isCloudinary(article.ogImage?.url);
 
   return {
     title,
@@ -85,7 +91,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url,
       title,
       description,
-      images: image ? [{ url: image, alt: imageAlt, width: 1200, height: 630 }] : [],
+      images: image
+        ? [knownSize
+            ? { url: image, alt: imageAlt, width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT }
+            : { url: image, alt: imageAlt }]
+        : [],
       locale: 'ar_IQ',
       siteName: SITE_NAME,
       publishedTime: article.publishedAt,
