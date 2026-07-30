@@ -98,6 +98,13 @@ const config = {
   // Shared secret for triggering on-demand ISR revalidation on the frontend
   revalidateSecret: process.env.REVALIDATE_SECRET || '',
 
+  // Auto-announce newly published articles to a Telegram channel.
+  // Inert unless both are set: no token, no posting, no errors.
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN || '',
+    channelId: process.env.TELEGRAM_CHANNEL_ID || '',
+  },
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
     publicMax: parseInt(process.env.RATE_LIMIT_PUBLIC_MAX, 10) || 100,

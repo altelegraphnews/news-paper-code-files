@@ -194,6 +194,12 @@ const articleSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Stamped once the article has been announced in the Telegram channel, so
+    // republishing or editing never posts it a second time.
+    telegramPostedAt: {
+      type: Date,
+      default: null,
+    },
     source: {
       name: String,
       url: String,

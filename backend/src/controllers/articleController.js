@@ -6,6 +6,7 @@ const { success, created, paginated, errors } = require('../utils/responseHelper
 const { generateUniqueSlug } = require('../utils/slugGenerator');
 const { calculateReadingTime, sanitizeExcerpt } = require('../utils/readingTime');
 const { sanitizeHtml } = require('../utils/sanitizer');
+const { announceArticle } = require('../services/telegramService');
 
 // Mirrors the enum on the Article schema. Used to validate a caller-supplied
 // ?status= before it is allowed anywhere near the query filter.
@@ -280,6 +281,8 @@ const createArticle = async (req, res, next) => {
       .populate('author', 'name avatar slug')
       .lean();
 
+    announceArticle(article._id);
+
     return created(res, populated, 'تم إنشاء المقال بنجاح');
   } catch (error) {
     next(error);
@@ -434,6 +437,8 @@ const updateArticle = async (req, res, next) => {
       .select('-revisions')
       .lean();
 
+    announceArticle(article._id);
+
     return success(res, updated, 'تم تحديث المقال بنجاح');
   } catch (error) {
     next(error);
@@ -576,6 +581,8 @@ const publishArticle = async (req, res, next) => {
       changes: { before: { status: previousStatus }, after: { status: 'published' } },
     });
 
+    announceArticle(article._id);
+
     return success(res, { id: article._id, slug: article.slug, publishedAt: article.publishedAt }, 'تم نشر المقال بنجاح');
   } catch (error) {
     next(error);
@@ -689,6 +696,8 @@ const approveArticle = async (req, res, next) => {
       req, action: 'article.approve', resourceType: 'article',
       resourceId: article._id, resourceTitle: article.title, severity: 'medium',
     });
+
+    announceArticle(article._id);
 
     return success(res, { id: article._id, status: 'published', publishedAt: article.publishedAt }, 'تمت الموافقة على المقال ونشره');
   } catch (error) { next(error); }
@@ -906,6 +915,8 @@ const bulkUpdateStatus = async (req, res, next) => {
       { _id: { $in: ids }, isDeleted: { $ne: true } },
       { $set: update }
     );
+
+    if (status === 'published') ids.forEach((id) => announceArticle(id));
 
     return success(res, { updated: ids.length }, `تم تحديث حالة ${ids.length} مقال`);
   } catch (error) { next(error); }
