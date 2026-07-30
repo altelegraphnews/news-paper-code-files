@@ -9,6 +9,34 @@ interface ShareButtonsProps {
   className?: string;
 }
 
+/**
+ * Facebook has two share endpoints and only one of them is supported.
+ *
+ * sharer.php is the legacy path. It still renders a composer, but the Post
+ * button can spin without ever completing, and Facebook's own Sharing Debugger
+ * reports a missing fb:app_id as an error to be corrected. It needs no
+ * configuration, so it stays as the fallback.
+ *
+ * The Share Dialog is the current, documented path — but it requires an app id.
+ * Set NEXT_PUBLIC_FACEBOOK_APP_ID and this switches to it automatically, with
+ * no other change. The app also needs al-telegraph.com listed under App
+ * Domains with a Website platform, or Facebook rejects the redirect_uri.
+ */
+function facebookShareHref(pageUrl: string): string {
+  const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+  const href = encodeURIComponent(pageUrl);
+  if (!appId) {
+    return `https://www.facebook.com/sharer/sharer.php?u=${href}`;
+  }
+  return (
+    'https://www.facebook.com/dialog/share' +
+    `?app_id=${encodeURIComponent(appId)}` +
+    '&display=popup' +
+    `&href=${href}` +
+    `&redirect_uri=${href}`
+  );
+}
+
 export default function ShareButtons({ title, url, className = '' }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
   const encodedUrl = encodeURIComponent(url);
@@ -87,7 +115,7 @@ export default function ShareButtons({ title, url, className = '' }: ShareButton
     },
     {
       name: 'فيسبوك',
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      href: facebookShareHref(url),
       icon: (
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
