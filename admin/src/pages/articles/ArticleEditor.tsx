@@ -5,6 +5,8 @@ import { categoriesApi, type Category } from '../../api/categories'
 import { mediaApi } from '../../api/media'
 import { usersApi } from '../../api/users'
 import RichEditor, { type RichEditorHandle } from '../../components/editor/RichEditor'
+import type { GalleryImageInput } from '../../components/editor/Gallery'
+import { galleryImageUrl, galleryFullUrl } from '../../utils/mediaUrl'
 import QuickWriterModal, { type QuickWriter } from '../../components/users/QuickWriterModal'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
@@ -181,7 +183,12 @@ export default function ArticleEditor() {
   const [mediaUploadPct, setMediaUploadPct] = useState(0)
   const [mediaDragging, setMediaDragging] = useState(false)
   const [showQuickWriter, setShowQuickWriter] = useState(false)
-  const [mediaTarget, setMediaTarget] = useState<'featured' | 'content'>('featured')
+  const [mediaTarget, setMediaTarget] = useState<'featured' | 'content' | 'gallery'>('featured')
+  // An array, not a Set: the order pictures are clicked becomes the gallery order.
+  const [mediaSelection, setMediaSelection] = useState<any[]>([])
+  // Set when an existing gallery asked for more pictures, so they append
+  // instead of starting a new gallery.
+  const [galleryAppendPos, setGalleryAppendPos] = useState<number | null>(null)
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editorRef = useRef<RichEditorHandle>(null)
   const mediaFileInput = useRef<HTMLInputElement>(null)
@@ -447,8 +454,15 @@ export default function ArticleEditor() {
       .finally(() => setMediaLoading(false))
   }, [])
 
-  const openMediaPicker = (target: 'featured' | 'content') => {
+  const assetKey = (asset: any) => asset?.public_id || asset?.secure_url || asset?.url
+
+  const openMediaPicker = (
+    target: 'featured' | 'content' | 'gallery',
+    appendPos: number | null = null
+  ) => {
     setMediaTarget(target)
+    setMediaSelection([])
+    setGalleryAppendPos(appendPos)
     setShowMediaPicker(true)
     loadMedia()
   }
@@ -456,6 +470,18 @@ export default function ArticleEditor() {
   const selectMedia = (asset: any) => {
     const url = asset?.secure_url || asset?.url
     if (!url) { toast.error('تعذّر قراءة رابط الصورة'); return }
+
+    // Building a gallery: a click toggles the picture in or out and the modal
+    // stays open. Everything below this point is the unchanged single-pick path.
+    if (mediaTarget === 'gallery') {
+      setMediaSelection((prev) => {
+        const key = assetKey(asset)
+        return prev.some((a) => assetKey(a) === key)
+          ? prev.filter((a) => assetKey(a) !== key)
+          : [...prev, asset]
+      })
+      return
+    }
 
     if (mediaTarget === 'featured') {
       set({
@@ -474,25 +500,79 @@ export default function ArticleEditor() {
     setShowMediaPicker(false)
   }
 
+  /** Cap the stored dimensions to the width actually baked into the src. */
+  const cappedSize = (asset: any) => {
+    const width = asset?.width || null
+    const height = asset?.height || null
+    if (!width || !height || width <= 1200) return { width, height }
+    return { width: 1200, height: Math.round((height / width) * 1200) }
+  }
+
+  const confirmGallery = () => {
+    if (!mediaSelection.length) return
+
+    const images: GalleryImageInput[] = mediaSelection.map((asset) => {
+      const url = asset?.secure_url || asset?.url
+      const { width, height } = cappedSize(asset)
+      return {
+        // The site renders body images as raw <img>, so the size has to be in
+        // the URL. data-full is what click-to-enlarge opens.
+        src: galleryImageUrl(url),
+        full: galleryFullUrl(url),
+        alt: '',
+        publicId: asset?.public_id || null,
+        width,
+        height,
+      }
+    })
+
+    if (galleryAppendPos !== null) {
+      editorRef.current?.appendToGallery(galleryAppendPos, images)
+    } else {
+      editorRef.current?.insertGallery(images)
+    }
+
+    toast.success(
+      images.length === 1 ? 'أُضيفت صورة إلى المعرض' : `أُضيفت ${images.length} صور إلى المعرض`
+    )
+    setShowMediaPicker(false)
+    setMediaSelection([])
+    setGalleryAppendPos(null)
+  }
+
   // Upload straight from the picker — a fresh library would otherwise be empty
-  // with no way to add a picture without leaving the article.
-  const uploadMedia = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
+  // with no way to add a picture without leaving the article. Sequential on
+  // purpose: uploading in parallel makes the progress bar meaningless.
+  const uploadMediaFiles = async (files: File[]) => {
+    const images = files.filter((file) => file.type.startsWith('image/'))
+    if (!images.length) {
       toast.error('يرجى اختيار ملف صورة')
       return
     }
     setMediaUploading(true)
     setMediaUploadPct(0)
+
+    const uploaded: any[] = []
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('folder', 'alwid/articles')
-      const res = await mediaApi.upload(formData, setMediaUploadPct)
-      const asset = res.data?.data
-      if (!asset) throw new Error('empty response')
-      setMediaAssets((prev) => [asset, ...prev])
+      for (let i = 0; i < images.length; i++) {
+        const formData = new FormData()
+        formData.append('file', images[i])
+        formData.append('folder', 'alwid/articles')
+        const res = await mediaApi.upload(formData, (pct) =>
+          setMediaUploadPct(Math.round(((i + pct / 100) / images.length) * 100))
+        )
+        const asset = res.data?.data
+        if (asset) uploaded.push(asset)
+      }
+      if (!uploaded.length) throw new Error('empty response')
+
+      setMediaAssets((prev) => [...uploaded, ...prev])
       setMediaError('')
-      selectMedia(asset)
+      if (mediaTarget === 'gallery') {
+        setMediaSelection((prev) => [...prev, ...uploaded])
+      } else {
+        selectMedia(uploaded[0])
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'فشل في رفع الصورة')
     } finally {
@@ -732,6 +812,8 @@ export default function ArticleEditor() {
             onChange={(html) => set({ content: html })}
             placeholder="ابدأ كتابة المقال هنا..."
             onImageInsert={() => openMediaPicker('content')}
+            onGalleryInsert={() => openMediaPicker('gallery')}
+            onGalleryAddImages={(pos) => openMediaPicker('gallery', pos)}
           />
         </div>
 
@@ -1050,8 +1132,31 @@ export default function ArticleEditor() {
       <Modal
         isOpen={showMediaPicker}
         onClose={() => setShowMediaPicker(false)}
-        title={mediaTarget === 'featured' ? 'اختر الصورة المميزة' : 'أدرج صورة في المقال'}
-        size="2xl"
+        title={
+          mediaTarget === 'featured' ? 'اختر الصورة المميزة'
+            : mediaTarget === 'gallery' ? (galleryAppendPos !== null ? 'أضف صورًا إلى المعرض' : 'أنشئ معرض صور')
+              : 'أدرج صورة في المقال'
+        }
+        size={mediaTarget === 'gallery' ? '3xl' : '2xl'}
+        footer={mediaTarget === 'gallery' ? (
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setShowMediaPicker(false)}>
+              إلغاء
+            </Button>
+            <Button
+              variant="gold"
+              size="sm"
+              onClick={confirmGallery}
+              disabled={mediaSelection.length === 0}
+            >
+              {mediaSelection.length === 0
+                ? 'اختر صورًا'
+                : mediaSelection.length === 1
+                  ? 'إدراج صورة واحدة'
+                  : `إدراج ${mediaSelection.length} صور`}
+            </Button>
+          </>
+        ) : undefined}
       >
         <div
           onDragOver={(e) => { if (canUploadMedia) { e.preventDefault(); setMediaDragging(true) } }}
@@ -1060,8 +1165,8 @@ export default function ArticleEditor() {
             if (!canUploadMedia) return
             e.preventDefault()
             setMediaDragging(false)
-            const file = e.dataTransfer.files?.[0]
-            if (file) uploadMedia(file)
+            const files = Array.from(e.dataTransfer.files || [])
+            if (files.length) uploadMediaFiles(files)
           }}
           className={clsx(
             'space-y-3 rounded-md transition-colors',
@@ -1073,7 +1178,9 @@ export default function ArticleEditor() {
             <p className="text-xs text-gray-400">
               {mediaTarget === 'featured'
                 ? 'اضغط على صورة لجعلها الصورة المميزة للمقال.'
-                : 'اضغط على صورة لإدراجها في مكان المؤشر داخل المقال.'}
+                : mediaTarget === 'gallery'
+                  ? 'اضغط على الصور لاختيارها — ترتيب الضغط هو ترتيبها في المعرض.'
+                  : 'اضغط على صورة لإدراجها في مكان المؤشر داخل المقال.'}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -1100,11 +1207,12 @@ export default function ArticleEditor() {
                 ref={mediaFileInput}
                 type="file"
                 accept="image/*"
+                multiple
                 className="hidden"
                 onChange={(e) => {
-                  const file = e.target.files?.[0]
+                  const files = Array.from(e.target.files || [])
                   e.target.value = ''
-                  if (file) uploadMedia(file)
+                  if (files.length) uploadMediaFiles(files)
                 }}
               />
             </div>
@@ -1137,20 +1245,39 @@ export default function ArticleEditor() {
             </div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto p-0.5">
-              {mediaAssets.map((asset) => (
-                <button
-                  key={asset.public_id || asset.secure_url || asset.url}
-                  type="button"
-                  onClick={() => selectMedia(asset)}
-                  className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-gold-500 transition-colors focus:outline-none focus:border-gold-500"
-                >
-                  <img
-                    src={asset.secure_url || asset.url}
-                    alt={asset.public_id}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
+              {mediaAssets.map((asset) => {
+                // -1 when not picked; otherwise its place in the gallery.
+                const order = mediaTarget === 'gallery'
+                  ? mediaSelection.findIndex((a) => assetKey(a) === assetKey(asset))
+                  : -1
+                const picked = order >= 0
+                return (
+                  <button
+                    key={assetKey(asset)}
+                    type="button"
+                    onClick={() => selectMedia(asset)}
+                    aria-pressed={mediaTarget === 'gallery' ? picked : undefined}
+                    className={clsx(
+                      'relative aspect-square rounded-md overflow-hidden border-2 transition-colors focus:outline-none focus:border-gold-500',
+                      picked ? 'border-gold-500' : 'border-transparent hover:border-gold-500'
+                    )}
+                  >
+                    <img
+                      src={asset.secure_url || asset.url}
+                      alt={asset.public_id}
+                      className="w-full h-full object-cover"
+                    />
+                    {picked && (
+                      <>
+                        <span className="absolute inset-0 bg-gold-500/25" aria-hidden="true" />
+                        <span className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-gold-500 text-white text-xs font-bold flex items-center justify-center shadow">
+                          {(order + 1).toLocaleString('ar-EG')}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>

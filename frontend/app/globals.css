@@ -612,6 +612,90 @@ a {
   margin-top: 0.45rem;
 }
 
+/* Gallery layouts.
+   The editor stores these as data attributes rather than inline styles because
+   the backend sanitiser strips `style` — see admin/src/components/editor/Gallery.tsx.
+   The bare .content-gallery rule above is left alone on purpose: every gallery
+   published before this feature has no data-layout and must keep rendering
+   exactly as it does today. */
+
+.prose-arabic .content-gallery[data-columns='2'] { --gal-cols: 2; }
+.prose-arabic .content-gallery[data-columns='3'] { --gal-cols: 3; }
+.prose-arabic .content-gallery[data-columns='4'] { --gal-cols: 4; }
+
+.prose-arabic .content-gallery[data-layout='grid'] {
+  grid-template-columns: repeat(var(--gal-cols, 3), 1fr);
+}
+
+.prose-arabic .content-gallery[data-layout='pair'] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* auto-fill keeps empty tracks, so a single picture — which is what a lone
+   captioned <figure> now parses into — would otherwise sit in a 150px column. */
+.prose-arabic .content-gallery > figure:only-child {
+  grid-column: 1 / -1;
+}
+
+/* The gallery node always emits a <figcaption>; an empty one would leave
+   0.45rem of dead space under every uncaptioned picture. */
+.prose-arabic .content-gallery figcaption:empty {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .prose-arabic .content-gallery[data-layout='grid'][data-columns='4'] {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .prose-arabic .content-gallery[data-layout='grid'],
+  .prose-arabic .content-gallery[data-layout='pair'] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Break out wider than the reading column. Logical margins, so it stays
+   symmetric in RTL; safe because body already hides horizontal overflow. */
+.prose-arabic .content-gallery[data-bleed='wide'] {
+  width: min(1200px, calc(100vw - 2rem));
+  margin-inline: calc(50% - min(600px, 50vw - 1rem));
+}
+
+/* Swipeable strip. Pure CSS: every picture stays in the DOM and crawlable,
+   and it works with JavaScript disabled. A sliver of the next picture is left
+   showing, which is what tells a reader there is more to swipe to. */
+.prose-arabic .content-gallery[data-layout='carousel'] {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* Keeps a hard flick on iOS to one picture instead of overshooting several. */
+  scroll-snap-stop: always;
+  /* Without this, a flick past the end triggers iOS back-navigation. */
+  overscroll-behavior-x: contain;
+  /* `scroll-behavior: smooth` is set on <html> and does not inherit. */
+  scroll-behavior: smooth;
+  padding-bottom: 0.5rem;
+}
+
+.prose-arabic .content-gallery[data-layout='carousel'] > figure {
+  flex: 0 0 min(78%, 32rem);
+  scroll-snap-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prose-arabic .content-gallery[data-layout='carousel'] {
+    scroll-behavior: auto;
+  }
+}
+
+/* Only offer the zoom affordance where the lightbox can actually run. */
+.js .prose-arabic .content-gallery figure {
+  cursor: zoom-in;
+}
+
 .prose-arabic table {
   width: 100%;
   border-collapse: collapse;

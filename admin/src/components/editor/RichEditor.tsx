@@ -1,9 +1,11 @@
-import { forwardRef, useEffect, useCallback, useImperativeHandle } from 'react'
+import { forwardRef, useEffect, useCallback, useImperativeHandle, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
 import ResizableImage from './ResizableImage'
+import { Gallery, GalleryItem, buildGalleryNode, buildGalleryItemNode } from './Gallery'
+import type { GalleryImageInput } from './Gallery'
 import Table from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableCell from '@tiptap/extension-table-cell'
@@ -17,7 +19,7 @@ import {
   Heading2, Heading3, Heading4,
   List, ListOrdered, Quote, Code, Minus,
   AlignRight, AlignCenter, AlignLeft, AlignJustify,
-  LinkIcon, ImageIcon, TableIcon,
+  LinkIcon, ImageIcon, TableIcon, Images,
   Undo, Redo, RemoveFormatting,
 } from 'lucide-react'
 
@@ -26,11 +28,17 @@ interface RichEditorProps {
   onChange: (html: string) => void
   placeholder?: string
   onImageInsert?: () => void
+  /** Toolbar "gallery" button — opens the picker in multi-select mode. */
+  onGalleryInsert?: () => void
+  /** A gallery's own "add pictures" button, with the gallery's document position. */
+  onGalleryAddImages?: (pos: number) => void
 }
 
-/** Imperative handle so the page can drop a picked image at the caret. */
+/** Imperative handle so the page can drop picked images at the caret. */
 export interface RichEditorHandle {
   insertImage: (image: { src: string; alt?: string; title?: string }) => void
+  insertGallery: (images: GalleryImageInput[]) => void
+  appendToGallery: (pos: number, images: GalleryImageInput[]) => void
   focus: () => void
 }
 
@@ -67,9 +75,14 @@ function Divider() {
 }
 
 const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEditor(
-  { value, onChange, placeholder, onImageInsert },
+  { value, onChange, placeholder, onImageInsert, onGalleryInsert, onGalleryAddImages },
   ref
 ) {
+  // The editor is built once, so the node view reaches the current handler
+  // through a ref rather than closing over the first render's copy.
+  const addImagesRef = useRef(onGalleryAddImages)
+  addImagesRef.current = onGalleryAddImages
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -84,6 +97,10 @@ const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEd
       ResizableImage.configure({
         HTMLAttributes: { class: 'article-image' },
       }),
+      Gallery.configure({
+        onAddImages: (pos: number) => addImagesRef.current?.(pos),
+      }),
+      GalleryItem,
       Table.configure({ resizable: true }),
       TableRow,
       TableCell,
@@ -141,13 +158,36 @@ const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEd
 
       // An image as the very last node leaves nowhere to keep typing — give it
       // a trailing paragraph and park the caret there.
-      const { doc } = editor.state
-      if (doc.lastChild?.type.name === 'image') {
-        editor.chain().insertContentAt(doc.content.size, { type: 'paragraph' }).focus('end').run()
-      }
+      trailingParagraph()
     },
+
+    insertGallery: (images) => {
+      if (!editor || !images?.length) return
+      editor.chain().focus().insertContent(buildGalleryNode(images)).run()
+      trailingParagraph()
+    },
+
+    appendToGallery: (pos, images) => {
+      if (!editor || !images?.length) return
+      const node = editor.state.doc.nodeAt(pos)
+      if (!node || node.type.name !== 'gallery') return
+      // One inside the closing boundary, i.e. after the last picture.
+      const end = pos + node.nodeSize - 1
+      editor.chain().focus().insertContentAt(end, images.map(buildGalleryItemNode)).run()
+    },
+
     focus: () => { editor?.commands.focus() },
   }), [editor])
+
+  /** A block node as the very last child leaves nowhere to keep typing. */
+  function trailingParagraph() {
+    if (!editor) return
+    const { doc } = editor.state
+    const last = doc.lastChild?.type.name
+    if (last === 'image' || last === 'gallery') {
+      editor.chain().insertContentAt(doc.content.size, { type: 'paragraph' }).focus('end').run()
+    }
+  }
 
   if (!editor) return null
 
@@ -297,6 +337,11 @@ const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEd
         {onImageInsert && (
           <ToolbarButton onClick={onImageInsert} title="إدراج صورة">
             <ImageIcon className="w-4 h-4" />
+          </ToolbarButton>
+        )}
+        {onGalleryInsert && (
+          <ToolbarButton onClick={onGalleryInsert} title="إدراج معرض صور">
+            <Images className="w-4 h-4" />
           </ToolbarButton>
         )}
         <ToolbarButton onClick={insertTable} title="إدراج جدول">

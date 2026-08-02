@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import ArticleBody from '@/components/article/ArticleBody';
+import GalleryEnhancer from '@/components/article/GalleryEnhancer';
 import ShareButtons from '@/components/article/ShareButtons';
 import Comments from '@/components/article/Comments';
 import RelatedArticles from '@/components/article/RelatedArticles';
@@ -288,7 +289,12 @@ export default async function ArticlePage({ params }: Props) {
 
         {/* Article content */}
         {article.content && (
-          <ArticleBody content={article.content} className="mb-4" />
+          <>
+            <ArticleBody content={article.content} className="mb-4" />
+            {/* Carousel arrows and click-to-enlarge. Renders nothing until it
+                hydrates, so the article HTML above stays server-only. */}
+            <GalleryEnhancer articleId={article._id} />
+          </>
         )}
 
         {/* End-of-article ornament */}

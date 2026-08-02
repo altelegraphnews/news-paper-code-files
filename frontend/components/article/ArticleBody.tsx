@@ -11,6 +11,7 @@ interface ArticleBodyProps {
 export default function ArticleBody({ content, className = '' }: ArticleBodyProps) {
   return (
     <div
+      id="article-body"
       className={`prose-arabic article-content max-w-none ${className}`}
       dangerouslySetInnerHTML={{ __html: content }}
       dir="rtl"

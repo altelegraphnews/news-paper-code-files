@@ -401,6 +401,203 @@
   background: rgba(184, 146, 61, 0.12);
 }
 
+/* ─── Article galleries ───
+   Two layers. The chrome (toolbar, per-picture buttons) is editing furniture
+   and never leaves the admin. The .content-gallery rules below mirror the
+   site's own, so what the writer arranges is what the reader gets. */
+.tiptap-gallery {
+  position: relative;
+  margin: 1.5em 0;
+}
+
+.tiptap-gallery__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 0.6rem;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.tiptap-gallery__label {
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-size: 11px;
+  color: var(--color-text-muted, #8b93a7);
+  margin-inline-end: auto;
+}
+
+.tiptap-gallery__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-inline: 4px;
+  border-inline-start: 1px solid var(--color-border);
+}
+
+.tiptap-gallery__group--end {
+  border-inline-start: none;
+}
+
+.tiptap-gallery__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-size: 11.5px;
+  line-height: 1.6;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out-soft), border-color 150ms var(--ease-out-soft);
+}
+
+.tiptap-gallery__btn:hover:not(:disabled) {
+  border-color: var(--gold-3);
+  background: rgba(184, 146, 61, 0.12);
+}
+
+.tiptap-gallery__btn.is-active {
+  border-color: var(--gold-3);
+  background: rgba(184, 146, 61, 0.2);
+}
+
+.tiptap-gallery__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Per-picture chrome, revealed on hover or while the caret is inside. */
+.tiptap-gallery__item {
+  position: relative;
+  margin: 0;
+}
+
+.tiptap-gallery__chrome {
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 4px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  border-radius: 5px;
+  background: rgba(16, 21, 31, 0.82);
+  opacity: 0;
+  transition: opacity 150ms var(--ease-out-soft);
+}
+
+.tiptap-gallery__item:hover .tiptap-gallery__chrome,
+.tiptap-gallery__item[data-active='true'] .tiptap-gallery__chrome {
+  opacity: 1;
+}
+
+.tiptap-gallery__chrome .tiptap-gallery__btn {
+  padding: 3px;
+  color: #f3e2a4;
+}
+
+.tiptap-gallery__chrome .tiptap-gallery__btn:hover:not(:disabled) {
+  background: rgba(243, 226, 164, 0.18);
+}
+
+.tiptap-gallery__grip {
+  display: inline-flex;
+  padding: 3px;
+  color: #f3e2a4;
+  cursor: grab;
+}
+
+.tiptap-gallery__item[data-active='true'] {
+  outline: 2px solid var(--gold-3);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.tiptap-gallery__alt {
+  display: block;
+  margin-top: 4px;
+}
+
+.tiptap-gallery__alt input {
+  width: 100%;
+  padding: 3px 8px;
+  border: 1px solid var(--gold-3);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-size: 12px;
+}
+
+/* ── Layout preview: mirrors frontend/app/globals.css ── */
+.ProseMirror .content-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.ProseMirror .content-gallery > figure {
+  margin: 0;
+}
+
+.ProseMirror .content-gallery img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border-radius: 0.25rem;
+  box-shadow: var(--shadow);
+}
+
+.ProseMirror .content-gallery figcaption {
+  margin-top: 0.45rem;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-size: 12px;
+  color: var(--color-text-muted, #8b93a7);
+  text-align: center;
+  min-height: 1.2em;
+}
+
+/* auto-fill keeps empty tracks, so a lone picture would sit in a 150px column. */
+.ProseMirror .content-gallery > figure:only-child {
+  grid-column: 1 / -1;
+}
+
+.ProseMirror .content-gallery[data-columns='2'] { --gal-cols: 2; }
+.ProseMirror .content-gallery[data-columns='3'] { --gal-cols: 3; }
+.ProseMirror .content-gallery[data-columns='4'] { --gal-cols: 4; }
+
+.ProseMirror .content-gallery[data-layout='grid'] {
+  grid-template-columns: repeat(var(--gal-cols, 3), 1fr);
+}
+
+.ProseMirror .content-gallery[data-layout='pair'] {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.ProseMirror .content-gallery[data-layout='carousel'] {
+  display: flex;
+  overflow-x: auto;
+  gap: 0.75rem;
+}
+
+.ProseMirror .content-gallery[data-layout='carousel'] > figure {
+  flex: 0 0 min(70%, 22rem);
+}
+
+.ProseMirror .content-gallery[data-bleed='wide'] {
+  outline: 1px dashed var(--gold-3);
+  outline-offset: 6px;
+}
+
 /* Table styles */
 .ProseMirror table {
   border-collapse: collapse;
