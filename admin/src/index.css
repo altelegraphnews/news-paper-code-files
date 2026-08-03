@@ -544,13 +544,19 @@
   align-items: start;
 }
 
-/* TipTap wraps every React node view in <div class="react-renderer">, so in the
-   editor the gallery's children are those wrappers rather than the <figure>
-   elements — which is why a three-column grid laid the pictures out one per
-   row. `display: contents` removes the wrapper from layout, so the figure
-   itself becomes the grid item and the editor matches the saved HTML, where
-   the figures really are direct children. */
-.ProseMirror .content-gallery > .react-renderer {
+/* In the editor TipTap builds two wrapper layers the saved HTML does not have:
+ *
+ *   .content-gallery            <- the grid
+ *     └ <div class="">          <- ProseMirror's contentDOM, ONE element
+ *         └ div.react-renderer  <- one per picture
+ *             └ figure
+ *
+ * The grid was always correct; it simply had a single child, so every picture
+ * landed in the first column and stacked inside it. Collapsing both wrappers
+ * out of layout makes the figures the grid items, exactly as they are in the
+ * saved HTML — which is the only structure the site ever sees. */
+.ProseMirror .content-gallery > div,
+.ProseMirror .content-gallery > div > .react-renderer {
   display: contents;
 }
 
