@@ -544,8 +544,20 @@
   align-items: start;
 }
 
-.ProseMirror .content-gallery > figure {
+/* TipTap wraps every React node view in <div class="react-renderer">, so in the
+   editor the gallery's children are those wrappers rather than the <figure>
+   elements — which is why a three-column grid laid the pictures out one per
+   row. `display: contents` removes the wrapper from layout, so the figure
+   itself becomes the grid item and the editor matches the saved HTML, where
+   the figures really are direct children. */
+.ProseMirror .content-gallery > .react-renderer {
+  display: contents;
+}
+
+/* Descendant, not child: the wrapper above sits in between. */
+.ProseMirror .content-gallery figure {
   margin: 0;
+  min-width: 0;
 }
 
 .ProseMirror .content-gallery img {
@@ -566,9 +578,12 @@
   min-height: 1.2em;
 }
 
-/* auto-fill keeps empty tracks, so a lone picture would sit in a 150px column. */
-.ProseMirror .content-gallery > figure:only-child {
+/* auto-fill keeps empty tracks, so a lone picture would sit in a 150px column.
+   Flagged by the node view rather than :only-child, because the react-renderer
+   wrapper makes every figure an only child of something. */
+.ProseMirror .content-gallery[data-single='true'] figure {
   grid-column: 1 / -1;
+  margin-inline: auto;
 }
 
 .ProseMirror .content-gallery[data-columns='2'] { --gal-cols: 2; }
@@ -589,10 +604,6 @@
   gap: 0.75rem;
 }
 
-.ProseMirror .content-gallery[data-layout='carousel'] > figure {
-  flex: 0 0 min(70%, 22rem);
-}
-
 .ProseMirror .content-gallery[data-bleed='wide'] {
   outline: 1px dashed var(--gold-3);
   outline-offset: 6px;
@@ -601,7 +612,7 @@
 /* Sizing in the editor comes from the node view as an inline style, so the
    preview never depends on this cascade. Only the carousel slide is left here,
    because its width rides on a custom property the drag can set live. */
-.ProseMirror .content-gallery[data-layout='carousel'] > figure {
+.ProseMirror .content-gallery[data-layout='carousel'] figure {
   flex: 0 0 var(--gal-slide, min(70%, 22rem));
 }
 

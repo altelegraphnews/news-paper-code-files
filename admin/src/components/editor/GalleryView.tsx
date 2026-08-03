@@ -225,6 +225,9 @@ export function GalleryNodeView(props: NodeViewProps) {
         data-columns={columns ? String(columns) : undefined}
         data-bleed={bleed || undefined}
         data-size={size ?? undefined}
+        // :only-child is useless here — the react-renderer wrapper makes every
+        // figure an only child of something.
+        data-single={count === 1 ? 'true' : undefined}
       />
     </NodeViewWrapper>
   )
