@@ -598,6 +598,43 @@
   outline-offset: 6px;
 }
 
+/* Picture size, mirroring the site. Unset keeps the original 150px tracks. */
+.ProseMirror .content-gallery[data-size='small'] { --gal-min: 110px; }
+.ProseMirror .content-gallery[data-size='large'] { --gal-min: 260px; }
+
+.ProseMirror .content-gallery {
+  grid-template-columns: repeat(auto-fill, minmax(var(--gal-min, 150px), 1fr));
+}
+
+.ProseMirror .content-gallery > figure:only-child { max-width: 72%; margin-inline: auto; }
+.ProseMirror .content-gallery[data-size='small'] > figure:only-child { max-width: 45%; }
+.ProseMirror .content-gallery[data-size='large'] > figure:only-child { max-width: 100%; }
+
+.ProseMirror .content-gallery[data-layout='carousel'][data-size='small'] > figure { flex-basis: min(45%, 15rem); }
+.ProseMirror .content-gallery[data-layout='carousel'][data-size='large'] > figure { flex-basis: min(88%, 30rem); }
+
+/* Text wrapping around a body picture — the newspaper layout. */
+.ProseMirror .tiptap-image[data-float='right'] {
+  float: right;
+  margin: 0.35rem 0 1rem 1.25rem;
+}
+
+.ProseMirror .tiptap-image[data-float='left'] {
+  float: left;
+  margin: 0.35rem 1.25rem 1rem 0;
+}
+
+.ProseMirror .tiptap-image[data-float] {
+  max-width: 60%;
+}
+
+/* Keep a float from escaping the editing surface. */
+.ProseMirror::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
 /* Table styles */
 .ProseMirror table {
   border-collapse: collapse;

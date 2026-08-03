@@ -696,6 +696,80 @@ a {
   cursor: zoom-in;
 }
 
+/* How large the pictures render. The writer picks this per gallery; with no
+   data-size the track stays 150px, so galleries published before the control
+   existed are untouched. */
+.prose-arabic .content-gallery[data-size='small'] { --gal-min: 110px; }
+.prose-arabic .content-gallery[data-size='large'] { --gal-min: 260px; }
+
+.prose-arabic .content-gallery {
+  grid-template-columns: repeat(auto-fill, minmax(var(--gal-min, 150px), 1fr));
+}
+
+/* A lone picture spanning the full column is what reads as "too big". Centre
+   it at a newspaper-ish measure instead, and let the size control widen it. */
+.prose-arabic .content-gallery > figure:only-child {
+  max-width: 72%;
+  margin-inline: auto;
+}
+
+.prose-arabic .content-gallery[data-size='small'] > figure:only-child { max-width: 45%; }
+.prose-arabic .content-gallery[data-size='large'] > figure:only-child { max-width: 100%; }
+
+.prose-arabic .content-gallery[data-layout='carousel'][data-size='small'] > figure {
+  flex-basis: min(45%, 15rem);
+}
+
+.prose-arabic .content-gallery[data-layout='carousel'][data-size='large'] > figure {
+  flex-basis: min(88%, 30rem);
+}
+
+/* ── Text wrapping around a body picture — the newspaper layout ──
+   Stored as data-float because the sanitiser strips `style`. The picture keeps
+   its `width` attribute, so the writer's chosen size still decides how much
+   column is left for the text. */
+.prose-arabic img[data-float='right'] {
+  float: right;
+  margin: 0.35rem 0 1.15rem 1.5rem;
+}
+
+.prose-arabic img[data-float='left'] {
+  float: left;
+  margin: 0.35rem 1.5rem 1.15rem 0;
+}
+
+/* A floated picture must never take the whole column, or there is no text
+   beside it — and one that was never resized needs a starting width. */
+.prose-arabic img[data-float] {
+  max-width: 60%;
+}
+
+.prose-arabic img[data-float]:not([width]) {
+  width: 42%;
+}
+
+/* Floats must not escape the article and drag the furniture below up beside them. */
+.prose-arabic::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+/* On a phone there is no column to wrap around — stack it. */
+@media (max-width: 640px) {
+  .prose-arabic img[data-float] {
+    float: none;
+    width: 100%;
+    max-width: 100%;
+    margin: 1.5rem auto;
+  }
+
+  .prose-arabic .content-gallery > figure:only-child,
+  .prose-arabic .content-gallery[data-size='small'] > figure:only-child {
+    max-width: 100%;
+  }
+}
+
 .prose-arabic table {
   width: 100%;
   border-collapse: collapse;

@@ -105,6 +105,14 @@ export const Gallery = Node.create({
         renderHTML: (attributes) =>
           attributes.bleed ? { 'data-bleed': attributes.bleed } : {},
       },
+      // How large each picture renders. Null keeps the original sizing, so
+      // galleries published before this control keep looking the same.
+      size: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-size'),
+        renderHTML: (attributes) =>
+          attributes.size ? { 'data-size': attributes.size } : {},
+      },
     }
   },
 
@@ -210,7 +218,7 @@ export const GalleryItem = Node.create({
 export function buildGalleryNode(images: GalleryImageInput[], layout: GalleryLayout | null = null) {
   return {
     type: Gallery.name,
-    attrs: { layout, columns: null, bleed: null },
+    attrs: { layout, columns: null, bleed: null, size: null },
     content: images.map(buildGalleryItemNode),
   }
 }

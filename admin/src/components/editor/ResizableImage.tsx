@@ -22,6 +22,13 @@ const PRESETS = [
   { label: '٧٥٪', fraction: 0.75 },
 ]
 
+/** Which side of the picture the text runs down. null = no wrapping. */
+const WRAPS: Array<{ value: string | null; label: string }> = [
+  { value: 'right', label: 'التفاف يمين' },
+  { value: 'left', label: 'التفاف يسار' },
+  { value: null, label: 'بلا التفاف' },
+]
+
 function ImageNodeView({ node, updateAttributes, selected, editor }: NodeViewProps) {
   const frameRef = useRef<HTMLSpanElement>(null)
   const [dragWidth, setDragWidth] = useState<number | null>(null)
@@ -70,7 +77,11 @@ function ImageNodeView({ node, updateAttributes, selected, editor }: NodeViewPro
   }
 
   return (
-    <NodeViewWrapper className="tiptap-image" data-active={active ? 'true' : undefined}>
+    <NodeViewWrapper
+      className="tiptap-image"
+      data-active={active ? 'true' : undefined}
+      data-float={node.attrs.float || undefined}
+    >
       <span
         ref={frameRef}
         className="tiptap-image__frame"
@@ -119,10 +130,32 @@ function ImageNodeView({ node, updateAttributes, selected, editor }: NodeViewPro
           ))}
           <button
             type="button"
-            onMouseDown={(e) => { e.preventDefault(); updateAttributes({ width: null }) }}
+            onMouseDown={(e) => { e.preventDefault(); updateAttributes({ width: null, float: null }) }}
           >
             ملء العرض
           </button>
+
+          {/* Newspaper layout: let the column run down one side of the picture.
+              Floating a full-width picture is meaningless, so this also gives
+              it a sensible width the first time. */}
+          {WRAPS.map((wrap) => (
+            <button
+              key={wrap.label}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                const column = columnWidth()
+                updateAttributes({
+                  float: wrap.value,
+                  width: wrap.value && !storedWidth && column
+                    ? Math.round(column * 0.42)
+                    : storedWidth,
+                })
+              }}
+            >
+              {wrap.label}
+            </button>
+          ))}
         </span>
       )}
     </NodeViewWrapper>
@@ -144,6 +177,15 @@ export const ResizableImage = Image.extend({
         },
         renderHTML: (attributes) =>
           attributes.width ? { width: Math.round(attributes.width) } : {},
+      },
+      // Which side the text runs down, newspaper-style. A data attribute rather
+      // than a float style, because the sanitiser strips `style` — the same
+      // reason the size above lives in `width`.
+      float: {
+        default: null,
+        parseHTML: (element) => element.getAttribute('data-float'),
+        renderHTML: (attributes) =>
+          attributes.float ? { 'data-float': attributes.float } : {},
       },
     }
   },

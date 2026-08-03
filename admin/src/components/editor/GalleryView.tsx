@@ -83,11 +83,18 @@ const LAYOUTS: Array<{ value: string | null; label: string; icon: React.ReactNod
   { value: 'carousel', label: 'شريط منزلق', icon: <StretchHorizontal className="w-3.5 h-3.5" /> },
 ]
 
+/** How big each picture renders. null = the sizing galleries had before this control. */
+const SIZES: Array<{ value: string | null; label: string }> = [
+  { value: 'small', label: 'صغير' },
+  { value: null, label: 'متوسط' },
+  { value: 'large', label: 'كبير' },
+]
+
 export function GalleryNodeView(props: NodeViewProps) {
   const { node, updateAttributes, editor, getPos, extension } = props
   const active = useCaretInside(props)
   const editable = editor.isEditable
-  const { layout, columns, bleed } = node.attrs
+  const { layout, columns, bleed, size } = node.attrs
   const count = node.childCount
 
   const addImages = useCallback(() => {
@@ -147,6 +154,19 @@ export function GalleryNodeView(props: NodeViewProps) {
           )}
 
           <span className="tiptap-gallery__group">
+            {SIZES.map((option) => (
+              <ChromeButton
+                key={option.label}
+                title={`حجم الصور: ${option.label}`}
+                active={(size ?? null) === option.value}
+                onClick={() => updateAttributes({ size: option.value })}
+              >
+                <span>{option.label}</span>
+              </ChromeButton>
+            ))}
+          </span>
+
+          <span className="tiptap-gallery__group">
             <ChromeButton
               title={bleed === 'wide' ? 'إرجاع إلى عرض العمود' : 'توسيع خارج العمود'}
               active={bleed === 'wide'}
@@ -173,6 +193,7 @@ export function GalleryNodeView(props: NodeViewProps) {
         data-layout={layout || undefined}
         data-columns={columns ? String(columns) : undefined}
         data-bleed={bleed || undefined}
+        data-size={size || undefined}
       />
     </NodeViewWrapper>
   )
