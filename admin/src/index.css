@@ -645,23 +645,122 @@
 .tiptap-gallery__handle--right { right: -4px; }
 .tiptap-gallery__handle--left  { left: -4px; }
 
+/* The grip is deliberately small; the thing you have to hit is not. A pseudo
+   element widens the target to a comfortable 22px without changing the look. */
+.tiptap-gallery__handle::after {
+  content: '';
+  position: absolute;
+  inset: -12px -7px;
+}
+
 .tiptap-gallery__item:hover .tiptap-gallery__handle,
 .tiptap-gallery__item[data-active='true'] .tiptap-gallery__handle {
   opacity: 1;
 }
 
+/* Only the grip under the pointer reacts. Swelling all 2N pills at once reads
+   as N separate controls activating, which is not what a set-wide drag is. */
+.tiptap-gallery__handle:hover,
+.tiptap-gallery__handle:active {
+  opacity: 1;
+  transform: translateY(-50%) scaleX(1.35);
+}
+
+/* The set-wide feedback belongs on the set. */
+.ProseMirror .content-gallery[data-resizing] {
+  outline: 1px solid var(--gold-3);
+  outline-offset: 8px;
+  border-radius: 6px;
+}
+
+/* While a drag is in flight the whole document must track the pointer exactly,
+   so every easing that would lag behind it is switched off. */
+.content-gallery[data-resizing],
+.content-gallery[data-resizing] figure,
+.content-gallery[data-resizing] img {
+  transition: none !important;
+}
+
+/* You drag away from a 9px grip by definition, so the cursor and the selection
+   guard belong on the body — otherwise the cursor flickers back to the text
+   I-beam on the first pixel and the drag blue-selects the article behind it. */
+body.is-resizing,
+body.is-resizing * {
+  cursor: ew-resize !important;
+  user-select: none !important;
+}
+
+/* Only the handoff from fixed tracks back to stretched ones eases — the drag
+   itself never does. */
+.ProseMirror .content-gallery.is-settling {
+  transition: grid-template-columns 140ms var(--ease-out-soft);
+}
+
+/* Under شبكة and زوج the column count owns the width, so a size grip would be
+   a control that visibly does nothing. */
+.ProseMirror .content-gallery[data-layout='grid'] .tiptap-gallery__handle,
+.ProseMirror .content-gallery[data-layout='pair'] .tiptap-gallery__handle {
+  display: none;
+}
+
+/* Touch has no hover, so chrome that only appears on hover is unreachable. */
+@media (pointer: coarse) {
+  .tiptap-gallery__handle,
+  .tiptap-gallery__chrome {
+    opacity: 1;
+  }
+
+  .tiptap-gallery__handle {
+    width: 14px;
+  }
+
+  .tiptap-gallery__handle::after {
+    inset: -16px -15px;
+  }
+
+  .tiptap-gallery__chrome .tiptap-gallery__btn {
+    padding: 8px;
+  }
+}
+
+/* Nothing here animates width or grid-template-columns — those are what the
+   drag drives, and easing them is what would feel a beat late. Only the
+   discrete layout switches ease, and only in their own properties. */
+.ProseMirror .content-gallery figure {
+  transition: opacity 200ms var(--ease-out-soft);
+}
+
+.ProseMirror .content-gallery img {
+  transition: box-shadow 150ms var(--ease-out-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tiptap-gallery__handle,
+  .ProseMirror .content-gallery figure,
+  .ProseMirror .content-gallery img {
+    transition: none;
+  }
+}
+
 .tiptap-gallery__size {
   position: absolute;
   bottom: 8px;
-  left: 8px;
+  /* Logical, not `left` — this document is RTL and the badge was landing on
+     the wrong corner. */
+  inset-inline-start: 8px;
   z-index: 3;
   padding: 2px 8px;
   border-radius: 3px;
-  background: rgba(16, 21, 31, 0.78);
+  background: rgba(16, 21, 31, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   color: #f3e2a4;
   font-family: 'IBM Plex Sans Arabic', sans-serif;
   font-size: 11px;
   line-height: 1.7;
+  /* Proportional digits jitter horizontally as the number counts, which reads
+     as instability. Tabular figures are why real readouts look steady. */
+  font-variant-numeric: tabular-nums;
   direction: ltr;
   pointer-events: none;
 }

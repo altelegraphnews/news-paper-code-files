@@ -83,6 +83,26 @@ const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEd
   const addImagesRef = useRef(onGalleryAddImages)
   addImagesRef.current = onGalleryAddImages
 
+  // Keystrokes are coalesced into a trailing flush rather than lifted to the
+  // page one at a time.
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const pendingHtml = useRef<string | null>(null)
+  const lastEmitted = useRef<string | undefined>(value)
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const flush = useCallback(() => {
+    if (flushTimer.current) {
+      clearTimeout(flushTimer.current)
+      flushTimer.current = null
+    }
+    const html = pendingHtml.current
+    pendingHtml.current = null
+    if (html === null || html === lastEmitted.current) return
+    lastEmitted.current = html
+    onChangeRef.current(html)
+  }, [])
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -119,18 +139,31 @@ const RichEditor = forwardRef<RichEditorHandle, RichEditorProps>(function RichEd
       },
     },
     onUpdate({ editor }) {
-      onChange(editor.getHTML())
+      // Serialising the whole article and re-rendering the ~1300-line editor
+      // page on every keystroke is what made typing feel heavy. Coalesce into a
+      // trailing flush; the 30s autosave is unaffected by a quarter second.
+      pendingHtml.current = editor.getHTML()
+      if (flushTimer.current) clearTimeout(flushTimer.current)
+      flushTimer.current = setTimeout(flush, 250)
+    },
+    onBlur() {
+      flush()
     },
   })
 
-  // Sync external value changes (e.g. loading article)
+  // Sync external value changes (e.g. loading an article). Compared against
+  // what we last emitted, not against getHTML(): while a flush is pending the
+  // editor legitimately holds newer content than `value`, and setting it back
+  // would swallow whatever was typed in the last quarter second.
   useEffect(() => {
-    if (!editor) return
-    const current = editor.getHTML()
-    if (current !== value && value !== undefined) {
-      editor.commands.setContent(value || '', false)
-    }
+    if (!editor || value === undefined) return
+    if (value === lastEmitted.current) return
+    if (editor.getHTML() === value) return
+    editor.commands.setContent(value || '', false)
   }, [value, editor])
+
+  // Nothing typed should be lost if the component goes away mid-flush.
+  useEffect(() => () => flush(), [])
 
   const setLink = useCallback(() => {
     if (!editor) return

@@ -31,11 +31,20 @@ function useCaretInside({ editor, getPos, node }: NodeViewProps) {
   sizeRef.current = node.nodeSize
 
   useEffect(() => {
+    // Every node view in the document listens here, so this runs N times per
+    // keystroke. Compare before setting: React would otherwise be handed a
+    // state update for every picture on every transaction.
+    let last: boolean | null = null
     const update = () => {
       const pos = typeof getPos === 'function' ? getPos() : null
-      if (typeof pos !== 'number') return setInside(false)
-      const { from, to } = editor.state.selection
-      setInside(from >= pos && to <= pos + sizeRef.current)
+      let next = false
+      if (typeof pos === 'number') {
+        const { from, to } = editor.state.selection
+        next = from >= pos && to <= pos + sizeRef.current
+      }
+      if (next === last) return
+      last = next
+      setInside(next)
     }
     update()
     editor.on('selectionUpdate', update)
@@ -101,8 +110,12 @@ export function sizeToPx(size: unknown): number {
   return 150
 }
 
+/** What gets saved: a step the site can express as a CSS rule. */
 const snap = (px: number) =>
   Math.min(SIZE_MAX, Math.max(SIZE_MIN, Math.round(px / SIZE_STEP) * SIZE_STEP))
+
+/** What the writer sees while dragging: every pixel, so the gesture tracks the pointer. */
+const clamp = (px: number) => Math.min(SIZE_MAX, Math.max(SIZE_MIN, Math.round(px)))
 
 /** What the writer should see, matching the rules the site renders with. */
 function previewStyle(layout: unknown, columns: unknown, size: unknown): React.CSSProperties {
@@ -240,8 +253,15 @@ export function GalleryItemNodeView(props: NodeViewProps) {
   const active = useCaretInside(props)
   const editable = editor.isEditable
   const [altOpen, setAltOpen] = useState(false)
-  const [dragWidth, setDragWidth] = useState<number | null>(null)
+  const [dragging, setDragging] = useState(false)
   const figureRef = useRef<HTMLElement | null>(null)
+  // The px readout is written straight to the DOM during a drag. Re-rendering
+  // React on every pointermove is what made the gesture feel heavy.
+  const labelRef = useRef<HTMLSpanElement | null>(null)
+  // RichEditor can call setContent mid-drag and destroy this node view, which
+  // would otherwise strand the gesture with its listeners and body class alive.
+  const endRef = useRef<(() => void) | null>(null)
+  useEffect(() => () => endRef.current?.(), [])
 
   /** Write a tile width onto the parent gallery, which is what sizes every picture. */
   const setGallerySize = useCallback((px: number) => {
@@ -251,16 +271,11 @@ export function GalleryItemNodeView(props: NodeViewProps) {
     const gallery = $pos.parent
     if (gallery.type.name !== 'gallery') return
     const galleryPos = $pos.before($pos.depth)
+    // Only the auto and carousel layouts expose grips at all, so there is no
+    // layout left to rewrite here. A size drag must never silently discard the
+    // arrangement the toolbar is showing as chosen.
     editor.view.dispatch(
-      editor.state.tr.setNodeMarkup(galleryPos, undefined, {
-        ...gallery.attrs,
-        size: px,
-        // A fixed column count decides the width on its own, so dragging under
-        // one would do nothing. Asking for a width means asking for the layout
-        // that honours it.
-        layout: gallery.attrs.layout === 'carousel' ? 'carousel' : null,
-        columns: null,
-      })
+      editor.state.tr.setNodeMarkup(galleryPos, undefined, { ...gallery.attrs, size: px })
     )
   }, [editor, getPos])
 
@@ -273,37 +288,114 @@ export function GalleryItemNodeView(props: NodeViewProps) {
 
     const figure = figureRef.current
     const image = figure?.querySelector('img')
-    if (!image) return
+    // Both wrappers between the figure and the gallery are `display: contents`,
+    // so parentElement is the react-renderer div, not the container. The
+    // container has to be looked up rather than walked to — writing the live
+    // preview to the wrong element is what made the drag do nothing until it
+    // was released.
+    const container = figure?.closest('.content-gallery') as HTMLElement | null
+    if (!image || !container) return
+
+    // Under شبكة and زوج the column count decides the width, so a size drag has
+    // nothing truthful to show. The grips are hidden there; this is the guard
+    // for anything that reaches the handler anyway.
+    const layoutAttr = container.getAttribute('data-layout')
+    if (layoutAttr === 'grid' || layoutAttr === 'pair') return
+
+    // Keeps the gesture alive when the pointer leaves the handle or the window.
+    const handle = event.currentTarget as HTMLElement
+    handle.setPointerCapture?.(event.pointerId)
 
     const startX = event.clientX
     const startWidth = image.getBoundingClientRect().width
-    let latest = snap(startWidth)
+    const carousel = container.getAttribute('data-layout') === 'carousel'
+    let live = clamp(startWidth)
+    let frame = 0
+    let moved = false
+    let done = false
 
-    const container = figure?.parentElement
-    const carousel = container?.getAttribute('data-layout') === 'carousel'
+    setDragging(true)
+    // Suppresses every easing that would lag behind the pointer.
+    container.setAttribute('data-resizing', 'true')
+    // The pointer leaves the 9px grip on the first pixel of travel, so the
+    // cursor and the selection guard have to live on the body.
+    document.body.classList.add('is-resizing')
+
+    // Fixed tracks, not minmax(…, 1fr). This is the whole reason the drag felt
+    // chunky: with `1fr` the rendered tile is (container − gaps) / N, where N
+    // is the integer column count auto-fill derives from the track MINIMUM — so
+    // the width is a step function of the pointer, frozen for tens of pixels
+    // and then jumping a full column. A fixed track resolves to exactly the
+    // value dragged.
+    if (!carousel) container.style.justifyContent = 'start'
+
+    const paint = () => {
+      frame = 0
+      if (carousel) container.style.setProperty('--gal-slide', `${live}px`)
+      else container.style.gridTemplateColumns = `repeat(auto-fill, ${live}px)`
+      if (labelRef.current) labelRef.current.textContent = `${live} px`
+    }
+    paint()
 
     const move = (e: PointerEvent) => {
       // Dragging an edge outward widens the picture, whichever edge it is.
       const delta = edge === 'right' ? e.clientX - startX : startX - e.clientX
-      latest = snap(startWidth + delta)
-      setDragWidth(latest)
-      // Paint the new size straight onto the DOM while dragging. Committing a
-      // transaction per pointermove would flood the undo stack; React restores
-      // this element from the node attrs the moment the drag ends.
-      if (container) {
-        if (carousel) container.style.setProperty('--gal-slide', `${latest}px`)
-        else container.style.gridTemplateColumns = `repeat(auto-fill, minmax(${latest}px, 1fr))`
-      }
-    }
-    const end = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', end)
-      setDragWidth(null)
-      setGallerySize(latest)
+      // Continuous on screen. Only the committed value snaps to a step, because
+      // that is a constraint of the site's CSS, not of the gesture.
+      live = clamp(startWidth + delta)
+      moved = true
+      // One paint per frame, never one per event.
+      if (!frame) frame = requestAnimationFrame(paint)
     }
 
+    const end = () => {
+      if (done) return
+      done = true
+      if (frame) cancelAnimationFrame(frame)
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', end)
+      window.removeEventListener('pointercancel', end)
+      window.removeEventListener('lostpointercapture', end)
+      container.removeAttribute('data-resizing')
+      document.body.classList.remove('is-resizing')
+      container.style.removeProperty('justify-content')
+      setDragging(false)
+
+      // A grab with no travel must not commit: the drag seeds from the RENDERED
+      // width, which under minmax(…, 1fr) is wider than the stored minimum, so
+      // committing it would inflate the gallery a little on every touch.
+      if (!moved) {
+        // Put back exactly what React believes it wrote, since it diffs props
+        // against props and would not repaint an unchanged attribute.
+        if (carousel) container.style.setProperty('--gal-slide', `${sizeToPx(container.getAttribute('data-size'))}px`)
+        else container.style.gridTemplateColumns =
+          `repeat(auto-fill, minmax(${sizeToPx(container.getAttribute('data-size'))}px, 1fr))`
+        return
+      }
+
+      const committed = snap(live)
+      // Never removeProperty here: React owns this inline style and compares
+      // props to props, so on an unchanged attribute it writes nothing and the
+      // stylesheet's 150px fallback would take over.
+      if (carousel) container.style.setProperty('--gal-slide', `${committed}px`)
+      else container.style.gridTemplateColumns = `repeat(auto-fill, minmax(${committed}px, 1fr))`
+      // Handing back from fixed tracks to stretched ones changes the width by
+      // up to one gap-share; eased, that reads as the value settling into place.
+      container.classList.add('is-settling')
+      const clear = () => container.classList.remove('is-settling')
+      container.addEventListener('transitionend', clear, { once: true })
+      window.setTimeout(clear, 200)
+
+      // Committing per pointermove would flood the undo stack, so the node
+      // attribute is written once, here.
+      setGallerySize(committed)
+    }
+
+    endRef.current = end
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', end)
+    window.addEventListener('lostpointercapture', end)
   }
 
   /** Rebuild the parent's child list in the new order. */
@@ -337,7 +429,7 @@ export function GalleryItemNodeView(props: NodeViewProps) {
       as="figure"
       ref={figureRef as any}
       className={clsx('tiptap-gallery__item', active && 'is-active')}
-      data-active={active || dragWidth !== null ? 'true' : undefined}
+      data-active={active || dragging ? 'true' : undefined}
     >
       {editable && (
         <span className="tiptap-gallery__chrome" contentEditable={false}>
@@ -368,23 +460,32 @@ export function GalleryItemNodeView(props: NodeViewProps) {
 
       {editable && (
         <>
+          {/* draggable={false} matters: galleryItem is a draggable node, so
+              without it the browser starts a native drag from the grip. */}
           <span
             className="tiptap-gallery__handle tiptap-gallery__handle--right"
             onPointerDown={(e) => beginResize(e, 'right')}
+            onDragStart={(e) => e.preventDefault()}
+            draggable={false}
             contentEditable={false}
             aria-hidden="true"
           />
           <span
             className="tiptap-gallery__handle tiptap-gallery__handle--left"
             onPointerDown={(e) => beginResize(e, 'left')}
+            onDragStart={(e) => e.preventDefault()}
+            draggable={false}
             contentEditable={false}
             aria-hidden="true"
           />
-          {dragWidth !== null && (
-            <span className="tiptap-gallery__size" contentEditable={false}>
-              {dragWidth} px
-            </span>
-          )}
+          {/* Always mounted so the ref is live before the first frame paints;
+              the drag writes its text directly. */}
+          <span
+            ref={labelRef}
+            className="tiptap-gallery__size"
+            contentEditable={false}
+            hidden={!dragging}
+          />
         </>
       )}
 
