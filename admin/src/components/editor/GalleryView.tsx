@@ -83,12 +83,49 @@ const LAYOUTS: Array<{ value: string | null; label: string; icon: React.ReactNod
   { value: 'carousel', label: 'شريط منزلق', icon: <StretchHorizontal className="w-3.5 h-3.5" /> },
 ]
 
-/** How big each picture renders. null = the sizing galleries had before this control. */
-const SIZES: Array<{ value: string | null; label: string }> = [
-  { value: 'small', label: 'صغير' },
-  { value: null, label: 'متوسط' },
-  { value: 'large', label: 'كبير' },
-]
+/** Tile width in px. Dragging snaps to this step so the site CSS can enumerate it. */
+export const SIZE_STEP = 20
+export const SIZE_MIN = 100
+export const SIZE_MAX = 400
+
+const namedSizes: Record<string, number> = { small: 110, medium: 150, large: 260 }
+
+/** Gallery `size` may be a px number or one of the original named sizes. */
+export function sizeToPx(size: unknown): number {
+  if (typeof size === 'number' && Number.isFinite(size)) return size
+  if (typeof size === 'string') {
+    if (namedSizes[size]) return namedSizes[size]
+    const parsed = Number.parseInt(size, 10)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return 150
+}
+
+const snap = (px: number) =>
+  Math.min(SIZE_MAX, Math.max(SIZE_MIN, Math.round(px / SIZE_STEP) * SIZE_STEP))
+
+/** What the writer should see, matching the rules the site renders with. */
+function previewStyle(layout: unknown, columns: unknown, size: unknown): React.CSSProperties {
+  if (layout === 'carousel') {
+    return {
+      display: 'flex',
+      overflowX: 'auto',
+      gap: '0.75rem',
+      ['--gal-slide' as any]: `${sizeToPx(size)}px`,
+    }
+  }
+  const base: React.CSSProperties = { display: 'grid', gap: '1rem', alignItems: 'start' }
+  if (layout === 'grid') {
+    return { ...base, gridTemplateColumns: `repeat(${Number(columns) || 3}, 1fr)` }
+  }
+  if (layout === 'pair') {
+    return { ...base, gridTemplateColumns: 'repeat(2, 1fr)' }
+  }
+  return {
+    ...base,
+    gridTemplateColumns: `repeat(auto-fill, minmax(${sizeToPx(size)}px, 1fr))`,
+  }
+}
 
 export function GalleryNodeView(props: NodeViewProps) {
   const { node, updateAttributes, editor, getPos, extension } = props
@@ -154,19 +191,6 @@ export function GalleryNodeView(props: NodeViewProps) {
           )}
 
           <span className="tiptap-gallery__group">
-            {SIZES.map((option) => (
-              <ChromeButton
-                key={option.label}
-                title={`حجم الصور: ${option.label}`}
-                active={(size ?? null) === option.value}
-                onClick={() => updateAttributes({ size: option.value })}
-              >
-                <span>{option.label}</span>
-              </ChromeButton>
-            ))}
-          </span>
-
-          <span className="tiptap-gallery__group">
             <ChromeButton
               title={bleed === 'wide' ? 'إرجاع إلى عرض العمود' : 'توسيع خارج العمود'}
               active={bleed === 'wide'}
@@ -188,12 +212,19 @@ export function GalleryNodeView(props: NodeViewProps) {
         </div>
       )}
 
+      {/* The layout is driven by an inline style rather than the stylesheet.
+          Only editor.getHTML() reaches the sanitiser, and that comes from the
+          node's renderHTML — never from this element — so an inline style here
+          is safe, and it beats every cascade question about what the preview
+          should look like. The data attributes are still written so the admin
+          and the published page share one vocabulary. */}
       <NodeViewContent
         className="content-gallery"
+        style={previewStyle(layout, columns, size)}
         data-layout={layout || undefined}
         data-columns={columns ? String(columns) : undefined}
         data-bleed={bleed || undefined}
-        data-size={size || undefined}
+        data-size={size ?? undefined}
       />
     </NodeViewWrapper>
   )
@@ -206,6 +237,71 @@ export function GalleryItemNodeView(props: NodeViewProps) {
   const active = useCaretInside(props)
   const editable = editor.isEditable
   const [altOpen, setAltOpen] = useState(false)
+  const [dragWidth, setDragWidth] = useState<number | null>(null)
+  const figureRef = useRef<HTMLElement | null>(null)
+
+  /** Write a tile width onto the parent gallery, which is what sizes every picture. */
+  const setGallerySize = useCallback((px: number) => {
+    const pos = typeof getPos === 'function' ? getPos() : null
+    if (typeof pos !== 'number') return
+    const $pos = editor.state.doc.resolve(pos)
+    const gallery = $pos.parent
+    if (gallery.type.name !== 'gallery') return
+    const galleryPos = $pos.before($pos.depth)
+    editor.view.dispatch(
+      editor.state.tr.setNodeMarkup(galleryPos, undefined, {
+        ...gallery.attrs,
+        size: px,
+        // A fixed column count decides the width on its own, so dragging under
+        // one would do nothing. Asking for a width means asking for the layout
+        // that honours it.
+        layout: gallery.attrs.layout === 'carousel' ? 'carousel' : null,
+        columns: null,
+      })
+    )
+  }, [editor, getPos])
+
+  /* Drag either edge to resize, exactly like a single body image — except the
+     width lands on the gallery, so every picture in the set stays consistent. */
+  const beginResize = (event: React.PointerEvent, edge: 'left' | 'right') => {
+    if (!editable) return
+    event.preventDefault()
+    event.stopPropagation()
+
+    const figure = figureRef.current
+    const image = figure?.querySelector('img')
+    if (!image) return
+
+    const startX = event.clientX
+    const startWidth = image.getBoundingClientRect().width
+    let latest = snap(startWidth)
+
+    const container = figure?.parentElement
+    const carousel = container?.getAttribute('data-layout') === 'carousel'
+
+    const move = (e: PointerEvent) => {
+      // Dragging an edge outward widens the picture, whichever edge it is.
+      const delta = edge === 'right' ? e.clientX - startX : startX - e.clientX
+      latest = snap(startWidth + delta)
+      setDragWidth(latest)
+      // Paint the new size straight onto the DOM while dragging. Committing a
+      // transaction per pointermove would flood the undo stack; React restores
+      // this element from the node attrs the moment the drag ends.
+      if (container) {
+        if (carousel) container.style.setProperty('--gal-slide', `${latest}px`)
+        else container.style.gridTemplateColumns = `repeat(auto-fill, minmax(${latest}px, 1fr))`
+      }
+    }
+    const end = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', end)
+      setDragWidth(null)
+      setGallerySize(latest)
+    }
+
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', end)
+  }
 
   /** Rebuild the parent's child list in the new order. */
   const move = useCallback((direction: -1 | 1) => {
@@ -236,8 +332,9 @@ export function GalleryItemNodeView(props: NodeViewProps) {
   return (
     <NodeViewWrapper
       as="figure"
+      ref={figureRef as any}
       className={clsx('tiptap-gallery__item', active && 'is-active')}
-      data-active={active ? 'true' : undefined}
+      data-active={active || dragWidth !== null ? 'true' : undefined}
     >
       {editable && (
         <span className="tiptap-gallery__chrome" contentEditable={false}>
@@ -265,6 +362,28 @@ export function GalleryItemNodeView(props: NodeViewProps) {
       )}
 
       <img src={node.attrs.src} alt={node.attrs.alt || ''} draggable={false} />
+
+      {editable && (
+        <>
+          <span
+            className="tiptap-gallery__handle tiptap-gallery__handle--right"
+            onPointerDown={(e) => beginResize(e, 'right')}
+            contentEditable={false}
+            aria-hidden="true"
+          />
+          <span
+            className="tiptap-gallery__handle tiptap-gallery__handle--left"
+            onPointerDown={(e) => beginResize(e, 'left')}
+            contentEditable={false}
+            aria-hidden="true"
+          />
+          {dragWidth !== null && (
+            <span className="tiptap-gallery__size" contentEditable={false}>
+              {dragWidth} px
+            </span>
+          )}
+        </>
+      )}
 
       {editable && altOpen && (
         <span className="tiptap-gallery__alt" contentEditable={false}>

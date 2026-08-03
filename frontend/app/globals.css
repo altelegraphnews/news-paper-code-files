@@ -696,32 +696,44 @@ a {
   cursor: zoom-in;
 }
 
-/* How large the pictures render. The writer picks this per gallery; with no
-   data-size the track stays 150px, so galleries published before the control
-   existed are untouched. */
-.prose-arabic .content-gallery[data-size='small'] { --gal-min: 110px; }
-.prose-arabic .content-gallery[data-size='large'] { --gal-min: 260px; }
+/* The drag handle writes a px width. CSS cannot turn attr() into a length,
+   so the steps the handle snaps to are enumerated here. Anything without a
+   data-size — every gallery published before the handle existed — keeps the
+   150px tracks it was published with. */
+.prose-arabic .content-gallery[data-size='100'] { --gal-min: 100px; --gal-slide: 100px; }
+.prose-arabic .content-gallery[data-size='120'] { --gal-min: 120px; --gal-slide: 120px; }
+.prose-arabic .content-gallery[data-size='140'] { --gal-min: 140px; --gal-slide: 140px; }
+.prose-arabic .content-gallery[data-size='160'] { --gal-min: 160px; --gal-slide: 160px; }
+.prose-arabic .content-gallery[data-size='180'] { --gal-min: 180px; --gal-slide: 180px; }
+.prose-arabic .content-gallery[data-size='200'] { --gal-min: 200px; --gal-slide: 200px; }
+.prose-arabic .content-gallery[data-size='220'] { --gal-min: 220px; --gal-slide: 220px; }
+.prose-arabic .content-gallery[data-size='240'] { --gal-min: 240px; --gal-slide: 240px; }
+.prose-arabic .content-gallery[data-size='260'] { --gal-min: 260px; --gal-slide: 260px; }
+.prose-arabic .content-gallery[data-size='280'] { --gal-min: 280px; --gal-slide: 280px; }
+.prose-arabic .content-gallery[data-size='300'] { --gal-min: 300px; --gal-slide: 300px; }
+.prose-arabic .content-gallery[data-size='320'] { --gal-min: 320px; --gal-slide: 320px; }
+.prose-arabic .content-gallery[data-size='340'] { --gal-min: 340px; --gal-slide: 340px; }
+.prose-arabic .content-gallery[data-size='360'] { --gal-min: 360px; --gal-slide: 360px; }
+.prose-arabic .content-gallery[data-size='380'] { --gal-min: 380px; --gal-slide: 380px; }
+.prose-arabic .content-gallery[data-size='400'] { --gal-min: 400px; --gal-slide: 400px; }
+
+/* The named sizes shipped briefly before the handle replaced them. */
+.prose-arabic .content-gallery[data-size='small']  { --gal-min: 110px; --gal-slide: 110px; }
+.prose-arabic .content-gallery[data-size='medium'] { --gal-min: 150px; --gal-slide: 150px; }
+.prose-arabic .content-gallery[data-size='large']  { --gal-min: 260px; --gal-slide: 260px; }
 
 .prose-arabic .content-gallery {
   grid-template-columns: repeat(auto-fill, minmax(var(--gal-min, 150px), 1fr));
 }
 
-/* A lone picture spanning the full column is what reads as "too big". Centre
-   it at a newspaper-ish measure instead, and let the size control widen it. */
+/* A lone picture spanning the whole column is what reads as "too big". */
 .prose-arabic .content-gallery > figure:only-child {
-  max-width: 72%;
+  max-width: var(--gal-min, 72%);
   margin-inline: auto;
 }
 
-.prose-arabic .content-gallery[data-size='small'] > figure:only-child { max-width: 45%; }
-.prose-arabic .content-gallery[data-size='large'] > figure:only-child { max-width: 100%; }
-
-.prose-arabic .content-gallery[data-layout='carousel'][data-size='small'] > figure {
-  flex-basis: min(45%, 15rem);
-}
-
-.prose-arabic .content-gallery[data-layout='carousel'][data-size='large'] > figure {
-  flex-basis: min(88%, 30rem);
+.prose-arabic .content-gallery[data-layout='carousel'] > figure {
+  flex: 0 0 var(--gal-slide, min(78%, 32rem));
 }
 
 /* ── Text wrapping around a body picture — the newspaper layout ──
@@ -764,8 +776,7 @@ a {
     margin: 1.5rem auto;
   }
 
-  .prose-arabic .content-gallery > figure:only-child,
-  .prose-arabic .content-gallery[data-size='small'] > figure:only-child {
+  .prose-arabic .content-gallery > figure:only-child {
     max-width: 100%;
   }
 }

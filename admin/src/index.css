@@ -598,20 +598,56 @@
   outline-offset: 6px;
 }
 
-/* Picture size, mirroring the site. Unset keeps the original 150px tracks. */
-.ProseMirror .content-gallery[data-size='small'] { --gal-min: 110px; }
-.ProseMirror .content-gallery[data-size='large'] { --gal-min: 260px; }
-
-.ProseMirror .content-gallery {
-  grid-template-columns: repeat(auto-fill, minmax(var(--gal-min, 150px), 1fr));
+/* Sizing in the editor comes from the node view as an inline style, so the
+   preview never depends on this cascade. Only the carousel slide is left here,
+   because its width rides on a custom property the drag can set live. */
+.ProseMirror .content-gallery[data-layout='carousel'] > figure {
+  flex: 0 0 var(--gal-slide, min(70%, 22rem));
 }
 
-.ProseMirror .content-gallery > figure:only-child { max-width: 72%; margin-inline: auto; }
-.ProseMirror .content-gallery[data-size='small'] > figure:only-child { max-width: 45%; }
-.ProseMirror .content-gallery[data-size='large'] > figure:only-child { max-width: 100%; }
+/* Drag either edge of a picture to size the whole set — the same interaction
+   as a single body image, just applied to the gallery. */
+.tiptap-gallery__handle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 9px;
+  height: 40px;
+  max-height: 55%;
+  border-radius: 5px;
+  background: var(--gold-3);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 1px 4px rgba(16, 21, 31, 0.35);
+  cursor: ew-resize;
+  opacity: 0;
+  touch-action: none;
+  z-index: 3;
+  transition: opacity 150ms var(--ease-out-soft);
+}
 
-.ProseMirror .content-gallery[data-layout='carousel'][data-size='small'] > figure { flex-basis: min(45%, 15rem); }
-.ProseMirror .content-gallery[data-layout='carousel'][data-size='large'] > figure { flex-basis: min(88%, 30rem); }
+.tiptap-gallery__handle--right { right: -4px; }
+.tiptap-gallery__handle--left  { left: -4px; }
+
+.tiptap-gallery__item:hover .tiptap-gallery__handle,
+.tiptap-gallery__item[data-active='true'] .tiptap-gallery__handle {
+  opacity: 1;
+}
+
+.tiptap-gallery__size {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 3;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(16, 21, 31, 0.78);
+  color: #f3e2a4;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  font-size: 11px;
+  line-height: 1.7;
+  direction: ltr;
+  pointer-events: none;
+}
 
 /* Text wrapping around a body picture — the newspaper layout. */
 .ProseMirror .tiptap-image[data-float='right'] {
