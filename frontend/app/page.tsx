@@ -230,8 +230,10 @@ function CategorySection({
   category: { name: string; slug: string; color?: string };
   articles: Article[];
 }) {
-  // A single orphan card reads as a broken shelf — skip until there's a pair.
-  if (!articles || articles.length < 2) return null;
+  // Only a genuinely empty section is hidden. This used to require a pair, on
+  // the grounds that one card reads as a broken shelf — but that quietly kept
+  // whole sections off the homepage, which is worse than a short row.
+  if (!articles?.length) return null;
   const shown = articles.slice(0, 4);
   return (
     <Reveal as="section" className="py-10 border-t border-[color:var(--color-border)]">

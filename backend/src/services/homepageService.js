@@ -162,7 +162,11 @@ const buildHomepageData = async () => {
     const catById = new Map(categories.map((c) => [String(c._id), c]));
     homepageCategories = settings.categoryRowIds.map((id) => catById.get(String(id))).filter(Boolean);
   } else {
-    homepageCategories = categories.filter((c) => c).slice(0, 6);
+    // Every nav category gets a row. This used to stop at the first six, which
+    // silently dropped any section beyond that with no way to tell from the
+    // homepage that it existed. Editors who want a shorter or reordered set can
+    // still choose one explicitly above.
+    homepageCategories = categories.filter(Boolean);
   }
   const categoryRows = await Promise.all(
     homepageCategories.map(async (cat) => {
