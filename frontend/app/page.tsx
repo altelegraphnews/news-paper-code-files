@@ -399,7 +399,10 @@ export default async function HomePage() {
       <OpinionSection
         key="opinion"
         articles={opinion}
-        title={titles.opinion}
+        // No saved title means follow the category, so renaming it in the
+        // dashboard renames this heading too instead of leaving the two saying
+        // different things.
+        title={titles.opinion || opinionCategory?.name || 'آراء'}
         // Falls back to /opinion only for API responses that predate this field.
         href={
           opinionCategory?.slug

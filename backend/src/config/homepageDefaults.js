@@ -19,9 +19,10 @@ const DEFAULT_HOMEPAGE_SETTINGS = {
     featured: 'مختارات',
     latest: 'آخر المنشورات',
     mostRead: 'الأكثر قراءة',
-    // Named after the section it draws from, so the heading, the articles and
-    // the «عرض الكل» link all say the same thing.
-    opinion: 'فكر',
+    // Empty means "use the name of the category the articles come from", so
+    // renaming that category renames the heading with it. A non-empty value is
+    // an editor's deliberate override.
+    opinion: '',
   },
   mostReadEnabled: true,
   newsletter: {
@@ -51,12 +52,12 @@ const SECTION_KEYS = ['heroFeatured', 'latest', 'categoryRows', 'opinion', 'news
  * The cost is that this one string cannot be chosen deliberately while the shim
  * is here. Remove it once the stored settings have been re-saved.
  */
-const LEGACY_TITLES = { opinion: 'رأي وتحليل' };
+const LEGACY_TITLES = { opinion: ['رأي وتحليل', 'فكر'] };
 
 const migrateLegacyTitles = (titles) => {
   const out = { ...titles };
-  for (const [key, legacy] of Object.entries(LEGACY_TITLES)) {
-    if (out[key] === legacy) out[key] = DEFAULT_HOMEPAGE_SETTINGS.titles[key];
+  for (const [key, legacyValues] of Object.entries(LEGACY_TITLES)) {
+    if (legacyValues.includes(out[key])) out[key] = DEFAULT_HOMEPAGE_SETTINGS.titles[key];
   }
   return out;
 };
