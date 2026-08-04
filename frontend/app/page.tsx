@@ -148,11 +148,23 @@ function MostReadSidebar({ articles, title = 'الأكثر قراءة' }: { arti
   );
 }
 
-function OpinionSection({ articles, title = 'رأي وتحليل' }: { articles: Article[]; title?: string }) {
+function OpinionSection({
+  articles,
+  title = 'رأي وتحليل',
+  href = '/opinion',
+}: {
+  articles: Article[];
+  title?: string;
+  // Points at whichever section actually supplied these articles. It used to be
+  // hardcoded to /opinion, which redirects to فكر — but the backend picks the
+  // first of فكر/madkhal by `order`, which is المدخل by default, so the link
+  // sent readers to a section they were not looking at.
+  href?: string;
+}) {
   if (!articles?.length) return null;
   return (
     <section className="py-12">
-      <SectionHeader title={title} href="/opinion" />
+      <SectionHeader title={title} href={href} />
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsFor(articles.length)} gap-6`}>
         {articles.slice(0, 4).map((article: Article, i: number) => (
           <Reveal key={article._id} delay={i * 90}>
@@ -285,7 +297,7 @@ export default async function HomePage() {
     );
   }
 
-  const { hero, heroSlides, featured = [], latest = [], categoryRows = [], mostRead = [], opinion = [], settings } = data;
+  const { hero, heroSlides, featured = [], latest = [], categoryRows = [], mostRead = [], opinion = [], opinionCategory = null, settings } = data;
 
   // Older API responses predate the carousel and only send a single `hero`.
   const slides: Article[] = heroSlides?.length ? heroSlides : hero ? [hero] : [];
@@ -369,16 +381,31 @@ export default async function HomePage() {
     categoryRows: (
       <div key="categoryRows">
         {(categoryRows || [])
+          // Drop only the section the opinion block is already showing. This
+          // used to drop both فكر and المدخل, hiding whichever one the opinion
+          // block had not used.
           .filter(
             (row: { category: { slug: string }; articles: Article[] }) =>
-              !(opinion?.length && (row.category.slug === 'فكر' || row.category.slug === 'madkhal'))
+              !(opinion?.length && opinionCategory?.slug && row.category.slug === opinionCategory.slug)
           )
           .map((row: { category: { name: string; slug: string; color?: string }; articles: Article[] }) => (
             <CategorySection key={row.category.slug} category={row.category} articles={row.articles} />
           ))}
       </div>
     ),
-    opinion: <OpinionSection key="opinion" articles={opinion} title={titles.opinion} />,
+    opinion: (
+      <OpinionSection
+        key="opinion"
+        articles={opinion}
+        title={titles.opinion}
+        // Falls back to /opinion only for API responses that predate this field.
+        href={
+          opinionCategory?.slug
+            ? `/category/${encodeURIComponent(opinionCategory.slug)}`
+            : '/opinion'
+        }
+      />
+    ),
     newsletter: (
       <NewsletterSignup
         key="newsletter"

@@ -188,7 +188,12 @@ const buildHomepageData = async () => {
     .populate('category', 'name slug color')
     .lean();
 
-  // Featured thought/opinion articles (fikr or madkhal section)
+  // Featured thought/opinion articles (fikr or madkhal section).
+  // NOTE: `categories` is sorted by `order`, so this picks whichever of these
+  // sections comes first — with the default ordering that is المدخل, not فكر.
+  // Whichever it lands on is reported below as `opinionCategory`, so the
+  // homepage's "عرض الكل" links to the section the articles actually came from
+  // instead of assuming فكر.
   const fikrCategory = categories.find((c) => ['فكر', 'fikr', 'madkhal'].includes(c.slug));
   let opinionArticles = [];
   if (fikrCategory) {
@@ -215,6 +220,10 @@ const buildHomepageData = async () => {
     categoryRows,
     mostRead,
     opinion: opinionArticles,
+    // Where the opinion articles came from, so the section can link to it.
+    opinionCategory: fikrCategory
+      ? { name: fikrCategory.name, slug: fikrCategory.slug }
+      : null,
     settings,
     generatedAt: new Date().toISOString(),
   };
