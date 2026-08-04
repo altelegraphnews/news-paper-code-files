@@ -40,6 +40,27 @@ const DEFAULT_HOMEPAGE_SETTINGS = {
 
 const SECTION_KEYS = ['heroFeatured', 'latest', 'categoryRows', 'opinion', 'newsletter'];
 
+/**
+ * Titles that were once shipped as defaults and have since been renamed.
+ *
+ * Any site that ever pressed «حفظ الإعدادات» has the old default written into
+ * its stored settings, and a stored value beats a default — so renaming the
+ * default alone changes nothing on those sites. Treating the exact old string
+ * as "never customised" lets the rename land without a database migration.
+ *
+ * The cost is that this one string cannot be chosen deliberately while the shim
+ * is here. Remove it once the stored settings have been re-saved.
+ */
+const LEGACY_TITLES = { opinion: 'رأي وتحليل' };
+
+const migrateLegacyTitles = (titles) => {
+  const out = { ...titles };
+  for (const [key, legacy] of Object.entries(LEGACY_TITLES)) {
+    if (out[key] === legacy) out[key] = DEFAULT_HOMEPAGE_SETTINGS.titles[key];
+  }
+  return out;
+};
+
 // Merge saved settings over the defaults, keeping unknown/missing fields sane.
 const mergeHomepageSettings = (saved) => {
   const s = saved && typeof saved === 'object' ? saved : {};
@@ -52,7 +73,7 @@ const mergeHomepageSettings = (saved) => {
   }
   return {
     sections,
-    titles: { ...DEFAULT_HOMEPAGE_SETTINGS.titles, ...(s.titles || {}) },
+    titles: migrateLegacyTitles({ ...DEFAULT_HOMEPAGE_SETTINGS.titles, ...(s.titles || {}) }),
     mostReadEnabled: s.mostReadEnabled !== false,
     newsletter: { ...DEFAULT_HOMEPAGE_SETTINGS.newsletter, ...(s.newsletter || {}) },
     categoryRowIds: Array.isArray(s.categoryRowIds) ? s.categoryRowIds.map(String) : [],

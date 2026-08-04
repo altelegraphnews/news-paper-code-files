@@ -101,7 +101,24 @@ export default function SubmitForm() {
       <input
         type="text" tabIndex={-1} autoComplete="off" value={website}
         onChange={(e) => setWebsite(e.target.value)}
-        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+        // Clipped rather than pushed off-screen. `left: -9999px` made the
+        // document ~10,000px wide, and `overflow-x: hidden` lives only on
+        // `body`, never `html` — which does not contain it on mobile. Safari
+        // then sized the layout viewport to the document and zoomed out to fit,
+        // so the whole page rendered tiny and mis-scaled. This hides the input
+        // without giving it any position outside the page.
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          clipPath: 'inset(50%)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
         aria-hidden="true"
       />
 
