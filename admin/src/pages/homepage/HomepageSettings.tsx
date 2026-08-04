@@ -24,6 +24,7 @@ export default function HomepageSettings() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragKey, setDragKey] = useState<string | null>(null)
+  const [dragCat, setDragCat] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([homepageApi.getSettings(), categoriesApi.list()])
@@ -58,9 +59,32 @@ export default function HomepageSettings() {
     setDragKey(null)
   }
 
-  const toggleCategoryRow = (id: string) => {
-    const has = s.categoryRowIds.includes(id)
-    update({ categoryRowIds: has ? s.categoryRowIds.filter((x) => x !== id) : [...s.categoryRowIds, id] })
+  // The homepage shows every category; the saved list decides the order and
+  // anything not in it follows behind, so this mirrors what a reader sees.
+  const orderedCats = [
+    ...(s.categoryRowIds
+      .map((id) => cats.find((c) => c._id === id))
+      .filter(Boolean) as { _id: string; name: string }[]),
+    ...cats.filter((c) => !s.categoryRowIds.includes(c._id)),
+  ]
+
+  const moveCat = (from: number, to: number) => {
+    if (from === to || to < 0 || to >= orderedCats.length) return
+    const arr = [...orderedCats]
+    const [item] = arr.splice(from, 1)
+    arr.splice(to, 0, item)
+    // Write every id, not just the moved one: a partial list would leave the
+    // rest trailing in category order and the arrangement would not stick.
+    update({ categoryRowIds: arr.map((c) => c._id) })
+  }
+
+  const onDropCat = (targetId: string) => {
+    if (!dragCat || dragCat === targetId) { setDragCat(null); return }
+    moveCat(
+      orderedCats.findIndex((c) => c._id === dragCat),
+      orderedCats.findIndex((c) => c._id === targetId)
+    )
+    setDragCat(null)
   }
 
   const uploadMasthead = async (file?: File) => {
@@ -140,22 +164,60 @@ export default function HomepageSettings() {
 
       {/* Category rows */}
       <section className="card p-5">
-        <h3 className="font-heading font-bold text-gray-900 dark:text-gray-100 mb-1">أقسام التصنيفات على الرئيسية</h3>
-        <p className="text-xs text-gray-400 mb-4">اختر التصنيفات التي تظهر كأقسام. إن لم تختر شيئاً، تُعرَض تلقائياً.</p>
-        <div className="flex flex-wrap gap-2">
-          {cats.map((c) => {
-            const on = s.categoryRowIds.includes(c._id)
-            return (
-              <button
-                key={c._id}
-                onClick={() => toggleCategoryRow(c._id)}
-                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${on ? 'bg-gold-500 text-white border-gold-500' : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700'}`}
-              >
-                {on ? `${s.categoryRowIds.indexOf(c._id) + 1}. ` : ''}{c.name}
-              </button>
-            )
-          })}
+        <h3 className="font-heading font-bold text-gray-900 dark:text-gray-100 mb-1">ترتيب أقسام التصنيفات على الرئيسية</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          كل التصنيفات تظهر على الصفحة الرئيسية. اسحب — أو استخدم السهمين — لتحديد أيّها يظهر أولاً.
+          القسم الذي لا يحتوي على أيّ مقال منشور لا يظهر حتى تُنشر فيه مادة.
+        </p>
+        <div className="space-y-2">
+          {orderedCats.map((c, i) => (
+            <div
+              key={c._id}
+              draggable
+              onDragStart={() => setDragCat(c._id)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => onDropCat(c._id)}
+              onDragEnd={() => setDragCat(null)}
+              className={`flex items-center gap-3 rounded-md border p-3 bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 transition-opacity ${dragCat === c._id ? 'opacity-40' : ''}`}
+            >
+              <GripVertical className="w-4 h-4 text-gray-400 cursor-grab shrink-0" />
+              <span className="w-5 text-sm font-bold text-gold-600 tabular-nums shrink-0">{i + 1}</span>
+              <span className="flex-1 text-sm text-gray-800 dark:text-gray-100">{c.name}</span>
+              {/* Dragging is unusable on a touchscreen, so the same move is
+                  always available as a button. */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => moveCat(i, i - 1)}
+                  disabled={i === 0}
+                  title="تحريك للأعلى"
+                  className="p-1 w-7 text-gray-400 hover:text-gold-600 disabled:opacity-25 disabled:cursor-not-allowed"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveCat(i, i + 1)}
+                  disabled={i === orderedCats.length - 1}
+                  title="تحريك للأسفل"
+                  className="p-1 w-7 text-gray-400 hover:text-gold-600 disabled:opacity-25 disabled:cursor-not-allowed"
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
+        {s.categoryRowIds.length > 0 && (
+          <button
+            type="button"
+            onClick={() => update({ categoryRowIds: [] })}
+            className="mt-3 inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gold-600 transition-colors"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            إعادة الترتيب التلقائي (حسب ترتيب التصنيفات)
+          </button>
+        )}
       </section>
 
       {/* Newsletter text */}
