@@ -150,7 +150,7 @@ function MostReadSidebar({ articles, title = 'الأكثر قراءة' }: { arti
 
 function OpinionSection({
   articles,
-  title = 'رأي وتحليل',
+  title = 'فكر',
   href = '/opinion',
 }: {
   articles: Article[];

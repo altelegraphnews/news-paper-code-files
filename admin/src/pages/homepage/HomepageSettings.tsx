@@ -10,7 +10,7 @@ const SECTION_LABELS: Record<string, string> = {
   heroFeatured: 'الواجهة والمختارات',
   latest: 'أحدث المقالات',
   categoryRows: 'أقسام التصنيفات',
-  opinion: 'رأي وتحليل',
+  opinion: 'فكر',
   newsletter: 'النشرة البريدية',
 }
 
@@ -131,7 +131,7 @@ export default function HomepageSettings() {
                 </div>
               )}
               {sec.key === 'opinion' && (
-                <input className={`${inputClass} mt-2`} value={s.titles.opinion || ''} onChange={(e) => setTitle('opinion', e.target.value)} placeholder="عنوان قسم رأي وتحليل" />
+                <input className={`${inputClass} mt-2`} value={s.titles.opinion || ''} onChange={(e) => setTitle('opinion', e.target.value)} placeholder="عنوان قسم فكر" />
               )}
             </div>
           ))}

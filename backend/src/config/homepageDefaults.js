@@ -19,7 +19,9 @@ const DEFAULT_HOMEPAGE_SETTINGS = {
     featured: 'مختارات',
     latest: 'آخر المنشورات',
     mostRead: 'الأكثر قراءة',
-    opinion: 'رأي وتحليل',
+    // Named after the section it draws from, so the heading, the articles and
+    // the «عرض الكل» link all say the same thing.
+    opinion: 'فكر',
   },
   mostReadEnabled: true,
   newsletter: {
