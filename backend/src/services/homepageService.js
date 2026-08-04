@@ -160,7 +160,14 @@ const buildHomepageData = async () => {
   let homepageCategories;
   if (settings.categoryRowIds.length) {
     const catById = new Map(categories.map((c) => [String(c._id), c]));
-    homepageCategories = settings.categoryRowIds.map((id) => catById.get(String(id))).filter(Boolean);
+    const chosen = settings.categoryRowIds.map((id) => catById.get(String(id))).filter(Boolean);
+    // The dashboard list sets the ORDER, not the guest list. It used to be a
+    // filter, so any section an editor had not ticked — including ones created
+    // after the list was saved — never appeared on the homepage at all, with
+    // nothing on the page to indicate it was missing.
+    const chosenIds = new Set(chosen.map((c) => String(c._id)));
+    const rest = categories.filter((c) => c && !chosenIds.has(String(c._id)));
+    homepageCategories = [...chosen, ...rest];
   } else {
     // Every nav category gets a row. This used to stop at the first six, which
     // silently dropped any section beyond that with no way to tell from the
