@@ -187,11 +187,16 @@ export default function HomepageControl() {
   const handleInvalidateCache = async () => {
     setInvalidating(true)
     try {
-      // POST to homepage invalidate endpoint
-      await fetch('/api/homepage/invalidate', { method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` } })
-      toast.success('تم مسح الكاش — سيتم تحديث الصفحة الرئيسية')
-    } catch {
-      toast.error('فشل في مسح الكاش')
+      // Was a bare fetch to a relative '/api/homepage/invalidate' with a token
+      // read from the wrong localStorage key, so it hit the admin's own origin
+      // unauthenticated and 404'd. fetch() does not reject on 404 or 401, so
+      // the catch never ran and it reported success every time while clearing
+      // nothing. apiClient supplies the API base URL and the auth header, and
+      // axios rejects on a non-2xx so a failure is now actually visible.
+      await homepageApi.invalidate()
+      toast.success('تم مسح الكاش — ستتحدّث الصفحة الرئيسية خلال ثوانٍ')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'فشل في مسح الكاش')
     } finally {
       setInvalidating(false)
     }

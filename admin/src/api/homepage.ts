@@ -26,6 +26,12 @@ export const homepageApi = {
   saveSettings: (settings: HomepageSettings) =>
     apiClient.put('/homepage/settings', settings),
 
+  // Clears the API's Redis cache and asks the site to drop its ISR copy.
+  // Goes through apiClient so it inherits the API base URL and the auth header
+  // — a bare fetch() hit the admin's own origin unauthenticated and 404'd.
+  invalidate: () =>
+    apiClient.post('/homepage/invalidate'),
+
   getSections: () =>
     apiClient.get('/homepage/sections'),
 
