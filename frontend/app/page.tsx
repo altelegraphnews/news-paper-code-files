@@ -306,6 +306,11 @@ export default async function HomePage() {
 
   const titles = settings?.titles || {};
   const mostReadEnabled = settings?.mostReadEnabled !== false;
+  // Whether the opinion category gets its quote-card treatment. Its POSITION
+  // now comes from the category order like every other section, so this is only
+  // a choice of presentation.
+  const opinionEnabled =
+    (settings?.sections || []).find((x: { key: string }) => x.key === 'opinion')?.enabled !== false;
   const sectionOrder = settings?.sections?.length
     ? settings.sections
     : [
@@ -382,35 +387,34 @@ export default async function HomePage() {
     ),
     categoryRows: (
       <div key="categoryRows">
-        {(categoryRows || [])
-          // Drop only the section the opinion block is already showing. This
-          // used to drop both فكر and المدخل, hiding whichever one the opinion
-          // block had not used.
-          .filter(
-            (row: { category: { slug: string }; articles: Article[] }) =>
-              !(opinion?.length && opinionCategory?.slug && row.category.slug === opinionCategory.slug)
-          )
-          .map((row: { category: { name: string; slug: string; color?: string }; articles: Article[] }) => (
-            <CategorySection key={row.category.slug} category={row.category} articles={row.articles} />
-          ))}
+        {(categoryRows || []).map(
+          (row: { category: { name: string; slug: string; color?: string }; articles: Article[] }) => {
+            // The opinion category is rendered here, in the position the editor
+            // gave it, rather than as a separate block pinned below every row.
+            // It used to be filtered out of this list and emitted afterwards,
+            // so reordering it in the dashboard changed nothing and it always
+            // sat at the bottom.
+            const isOpinion = !!opinionCategory?.slug && row.category.slug === opinionCategory.slug;
+            if (isOpinion && opinionEnabled && opinion?.length) {
+              return (
+                <OpinionSection
+                  key={row.category.slug}
+                  articles={opinion}
+                  // No saved title means follow the category, so renaming it in
+                  // the dashboard renames this heading too.
+                  title={titles.opinion || row.category.name}
+                  href={`/category/${encodeURIComponent(row.category.slug)}`}
+                />
+              );
+            }
+            return <CategorySection key={row.category.slug} category={row.category} articles={row.articles} />;
+          }
+        )}
       </div>
     ),
-    opinion: (
-      <OpinionSection
-        key="opinion"
-        articles={opinion}
-        // No saved title means follow the category, so renaming it in the
-        // dashboard renames this heading too instead of leaving the two saying
-        // different things.
-        title={titles.opinion || opinionCategory?.name || 'آراء'}
-        // Falls back to /opinion only for API responses that predate this field.
-        href={
-          opinionCategory?.slug
-            ? `/category/${encodeURIComponent(opinionCategory.slug)}`
-            : '/opinion'
-        }
-      />
-    ),
+    // Rendered inline above, at the category's chosen position. Kept as a key
+    // so an older saved `sections` list that still names it stays valid.
+    opinion: null,
     newsletter: (
       <NewsletterSignup
         key="newsletter"
