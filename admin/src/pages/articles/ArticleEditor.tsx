@@ -7,6 +7,7 @@ import { usersApi } from '../../api/users'
 import RichEditor, { type RichEditorHandle } from '../../components/editor/RichEditor'
 import type { GalleryImageInput } from '../../components/editor/Gallery'
 import { galleryImageUrl, galleryFullUrl } from '../../utils/mediaUrl'
+import { saveErrorMessage } from '../../utils/apiError'
 import QuickWriterModal, { type QuickWriter } from '../../components/users/QuickWriterModal'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
@@ -149,46 +150,8 @@ function SideSection({ title, defaultOpen = true, children }: { title: string; d
 
 const inputClass = 'w-full px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gold-500/50'
 
-/**
- * The API answers a rejected save with 422 and errors: [{ field, message }],
- * naming exactly what was wrong — but only the generic headline
- * «خطأ في البيانات المدخلة» was ever shown. So an editor saw the same message
- * again and again with no way to tell which field caused it, and would go on
- * changing images and formatting that had nothing to do with it.
- */
-const FIELD_LABELS: Record<string, string> = {
-  title: 'العنوان',
-  subtitle: 'العنوان الفرعي',
-  slug: 'الرابط',
-  content: 'نص المقال',
-  excerpt: 'المقتطف',
-  category: 'التصنيف',
-  subcategory: 'التصنيف الفرعي',
-  tags: 'الوسوم',
-  author: 'الكاتب',
-  status: 'الحالة',
-  'seo.title': 'عنوان SEO',
-  'seo.description': 'وصف SEO',
-  'seo.keywords': 'الكلمة المفتاحية',
-}
-
 /** Mirrors the `maxlength: 50` on each entry of `tags` in the Article schema. */
 const TAG_MAX = 50
-
-const saveErrorMessage = (err: any, fallback = 'فشل في الحفظ') => {
-  const data = err?.response?.data
-  const details: any[] = Array.isArray(data?.errors) ? data.errors : []
-  if (details.length) {
-    const lines = details.map((e) => {
-      const key = String(e?.field ?? '')
-      // Mongoose reports array members as `tags.0`; the label lives on the root.
-      const label = FIELD_LABELS[key] || FIELD_LABELS[key.split('.')[0]] || key
-      return label ? `${label}: ${e?.message}` : e?.message
-    })
-    return lines.filter(Boolean).join(' — ')
-  }
-  return data?.message || fallback
-}
 
 export default function ArticleEditor() {
   const { id } = useParams<{ id: string }>()
