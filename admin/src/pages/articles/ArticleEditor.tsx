@@ -149,6 +149,47 @@ function SideSection({ title, defaultOpen = true, children }: { title: string; d
 
 const inputClass = 'w-full px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-gold-500/50'
 
+/**
+ * The API answers a rejected save with 422 and errors: [{ field, message }],
+ * naming exactly what was wrong — but only the generic headline
+ * «خطأ في البيانات المدخلة» was ever shown. So an editor saw the same message
+ * again and again with no way to tell which field caused it, and would go on
+ * changing images and formatting that had nothing to do with it.
+ */
+const FIELD_LABELS: Record<string, string> = {
+  title: 'العنوان',
+  subtitle: 'العنوان الفرعي',
+  slug: 'الرابط',
+  content: 'نص المقال',
+  excerpt: 'المقتطف',
+  category: 'التصنيف',
+  subcategory: 'التصنيف الفرعي',
+  tags: 'الوسوم',
+  author: 'الكاتب',
+  status: 'الحالة',
+  'seo.title': 'عنوان SEO',
+  'seo.description': 'وصف SEO',
+  'seo.keywords': 'الكلمة المفتاحية',
+}
+
+/** Mirrors the `maxlength: 50` on each entry of `tags` in the Article schema. */
+const TAG_MAX = 50
+
+const saveErrorMessage = (err: any, fallback = 'فشل في الحفظ') => {
+  const data = err?.response?.data
+  const details: any[] = Array.isArray(data?.errors) ? data.errors : []
+  if (details.length) {
+    const lines = details.map((e) => {
+      const key = String(e?.field ?? '')
+      // Mongoose reports array members as `tags.0`; the label lives on the root.
+      const label = FIELD_LABELS[key] || FIELD_LABELS[key.split('.')[0]] || key
+      return label ? `${label}: ${e?.message}` : e?.message
+    })
+    return lines.filter(Boolean).join(' — ')
+  }
+  return data?.message || fallback
+}
+
 export default function ArticleEditor() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -321,7 +362,10 @@ export default function ArticleEditor() {
         return id!
       }
     } catch (err: any) {
-      if (!silent) toast.error(err?.response?.data?.message || 'فشل في الحفظ')
+      // A failed autosave used to be swallowed entirely, so an article could
+      // stop saving while the editor kept typing and everything looked normal.
+      const message = saveErrorMessage(err)
+      toast.error(silent ? `تعذّر الحفظ التلقائي — ${message}` : message, { duration: 8000 })
       return null
     } finally {
       setSaving(false)
@@ -342,7 +386,7 @@ export default function ArticleEditor() {
       set({ status: 'pending' })
       navigate('/articles')
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'فشل في الإرسال للمراجعة')
+      toast.error(saveErrorMessage(err, 'فشل في الإرسال للمراجعة'), { duration: 8000 })
     } finally {
       setSubmitting(false)
     }
@@ -430,7 +474,14 @@ export default function ArticleEditor() {
 
   const addTag = () => {
     const tag = tagInput.trim()
-    if (tag && !form.tags.includes(tag)) {
+    if (!tag) { setTagInput(''); return }
+    // The schema caps each tag at 50 characters. Nothing stopped a longer one
+    // being added, and it only surfaced later as a save that kept failing.
+    if (tag.length > TAG_MAX) {
+      toast.error(`الوسم لا يتجاوز ${TAG_MAX} حرفاً`)
+      return
+    }
+    if (!form.tags.includes(tag)) {
       set({ tags: [...form.tags, tag] })
     }
     setTagInput('')
@@ -956,6 +1007,7 @@ export default function ArticleEditor() {
           <SideSection title="الوسوم">
             <div className="flex gap-2">
               <input
+                maxLength={TAG_MAX}
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
