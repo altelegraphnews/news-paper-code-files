@@ -196,6 +196,7 @@ export default function ArticleEditor() {
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editorRef = useRef<RichEditorHandle>(null)
   const mediaFileInput = useRef<HTMLInputElement>(null)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
 
   const set = useCallback((patch: Partial<ArticleForm>) => {
     setForm((prev) => ({ ...prev, ...patch }))
@@ -259,6 +260,18 @@ export default function ArticleEditor() {
       setWriters(res.data?.data || [])
     }).catch(() => {})
   }, [canAssignAuthor])
+
+  // The title is a textarea so an editor can hard-break a headline where it
+  // should wrap. At a fixed `rows` those extra lines sit behind an unscrollable
+  // `resize-none` box, so pressing Enter looked like it did nothing — the line
+  // was there, just out of sight. Track the content height instead. Keyed on
+  // form.title so it also fits after an article loads, not only while typing.
+  useEffect(() => {
+    const el = titleRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [form.title])
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -733,11 +746,12 @@ export default function ArticleEditor() {
           {/* Title */}
           <div className="card p-5 space-y-3">
             <textarea
+              ref={titleRef}
               value={form.title}
               onChange={(e) => set({ title: e.target.value })}
               placeholder="عنوان المقال..."
-              rows={2}
-              className="w-full font-heading text-2xl font-bold text-gray-900 dark:text-gray-100 bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:outline-none resize-none"
+              rows={1}
+              className="w-full min-h-[4.5rem] font-heading text-2xl font-bold text-gray-900 dark:text-gray-100 bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:outline-none resize-none overflow-hidden"
               dir="rtl"
             />
             <input

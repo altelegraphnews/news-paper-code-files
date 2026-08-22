@@ -157,6 +157,16 @@ export function metaDescription(text?: string | null, maxLength = 160): string {
   return `${(lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : cut).trim()}…`;
 }
 
+/**
+ * Headlines are authored in a textarea so an editor can hard-break one where it
+ * should wrap, and the article page honours that break. Nowhere else should:
+ * a raw newline inside <title>, og:title, a JSON-LD string or a share intent is
+ * at best ignored and at worst truncates the value, so collapse it there.
+ */
+export function singleLine(text?: string | null): string {
+  return (text || '').replace(/\s+/g, ' ').trim();
+}
+
 /* ─── JSON-LD ──────────────────────────────────────────────────────────── */
 
 const PUBLISHER = {

@@ -29,6 +29,7 @@ import {
   buildArticleSchema,
   buildBreadcrumbSchema,
   jsonLdScript,
+  singleLine,
 } from '@/lib/utils/seoUtils';
 
 // ISR: cache each rendered article for 5 minutes so navigating to it (or back to
@@ -73,12 +74,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Two thirds of the archive has no hand-written SEO title/description, so the
   // fallback chain is what most results actually show: the headline, and the
   // excerpt trimmed to a length Google will not cut mid-word.
-  const title = article.seo?.title || article.title;
+  const title = singleLine(article.seo?.title || article.title);
   const description = metaDescription(article.seo?.description || article.excerpt);
   const keywords = article.seo?.keywords?.length ? article.seo.keywords : article.tags;
   // Serve the crop we advertise — see ogImageSrc.
   const image = ogImageSrc(article.ogImage?.url);
-  const imageAlt = article.ogImage?.alt || article.title;
+  const imageAlt = singleLine(article.ogImage?.alt || article.title);
   const knownSize = isCloudinary(article.ogImage?.url);
 
   return {
@@ -127,7 +128,7 @@ export default async function ArticlePage({ params }: Props) {
     ...(article.category
       ? [{ name: article.category.name, url: absoluteUrl(`/category/${article.category.slug}`) }]
       : []),
-    { name: article.title, url: articleUrl },
+    { name: singleLine(article.title), url: articleUrl },
   ]);
 
   return (
@@ -157,7 +158,7 @@ export default async function ArticlePage({ params }: Props) {
               <span className="text-accent" aria-hidden="true">◆</span>
             </>
           )}
-          <span className="text-gray-700 dark:text-gray-300 line-clamp-1 max-w-[18rem]">{article.title}</span>
+          <span className="text-gray-700 dark:text-gray-300 line-clamp-1 max-w-[18rem]">{singleLine(article.title)}</span>
         </nav>
 
         {/* Breaking / Sponsored badges */}
@@ -179,7 +180,9 @@ export default async function ArticlePage({ params }: Props) {
         </div>
 
         {/* Title — centered editorial headline */}
-        <h1 className="rise rise-2 font-heading font-bold text-3xl md:text-5xl text-center text-gray-900 dark:text-gray-100 leading-[1.6] md:leading-[1.5] mb-5">
+        {/* whitespace-pre-line: the headline is the one place a hard break the
+            editor typed is honoured, so they control where a long title wraps. */}
+        <h1 className="rise rise-2 font-heading font-bold text-3xl md:text-5xl text-center text-gray-900 dark:text-gray-100 leading-[1.6] md:leading-[1.5] mb-5 whitespace-pre-line">
           {article.title}
         </h1>
 
@@ -266,7 +269,7 @@ export default async function ArticlePage({ params }: Props) {
             <div className="relative aspect-[16/9] md:rounded-sm overflow-hidden frame-gold shadow-card" style={{ background: 'var(--color-surface-2)' }}>
               <Image
                 src={article.ogImage.url}
-                alt={article.ogImage.alt || article.title}
+                alt={singleLine(article.ogImage.alt || article.title)}
                 fill
                 className="object-contain"
                 priority
@@ -285,7 +288,7 @@ export default async function ArticlePage({ params }: Props) {
         )}
 
         {/* Share buttons (top) */}
-        <ShareButtons title={article.title} url={articleUrl} className="mb-6" />
+        <ShareButtons title={singleLine(article.title)} url={articleUrl} className="mb-6" />
 
         {/* Article content */}
         {article.content && (
@@ -321,7 +324,7 @@ export default async function ArticlePage({ params }: Props) {
         )}
 
         {/* Share buttons (bottom) */}
-        <ShareButtons title={article.title} url={articleUrl} className="mb-8 pb-8 border-b border-gray-100 dark:border-gray-800" />
+        <ShareButtons title={singleLine(article.title)} url={articleUrl} className="mb-8 pb-8 border-b border-gray-100 dark:border-gray-800" />
 
         {/* Author bio */}
         {article.author?.bio && (
