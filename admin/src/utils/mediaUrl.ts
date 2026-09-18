@@ -7,7 +7,7 @@
  * so the whole site asks Cloudinary for bytes the same way.
  */
 
-const TRANSFORM = 'f_auto,q_auto,c_limit'
+const TRANSFORM = 'f_webp,q_auto,c_limit'
 
 /** A transform segment sits directly after /upload/ — `v1712…` is a version, not a transform. */
 const isTransformSegment = (segment: string) =>

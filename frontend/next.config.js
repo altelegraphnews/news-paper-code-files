@@ -33,9 +33,19 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    // Inert with loader: 'custom' — Next only reads this for its own optimizer.
+    // The delivered format is decided in lib/cloudinaryLoader.js.
     formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Every width listed here is a file Cloudinary generates, stores and bills
+    // for, per image and per format. The defaults are 16 widths; at ~1,160
+    // images that was 20,624 stored assets against 1,160 real photographs.
+    //
+    // These are the widths the layouts actually ask for. Nothing on the site
+    // renders wider than 960 CSS px (the hero is 896), so 1920 covers every
+    // case at 2x DPR and 2048/3840 only ever produced files no one displayed.
+    deviceSizes: [640, 828, 1200, 1920],
+    // Avatars: 36/64/72/96/128 CSS px, so these cover them at 1x and 2x.
+    imageSizes: [64, 128, 256, 384],
   },
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', '@headlessui/react'],

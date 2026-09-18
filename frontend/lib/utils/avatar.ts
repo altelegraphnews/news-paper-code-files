@@ -34,7 +34,7 @@ export function avatarSrc(avatar: AvatarLike, size: number): string | undefined 
   if (!url) return undefined;
   if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
   const px = Math.round(size * 2);
-  return url.replace('/upload/', `/upload/f_auto,q_auto,c_fill,g_face,w_${px},h_${px}/`);
+  return url.replace('/upload/', `/upload/f_webp,q_auto,c_fill,g_face,w_${px},h_${px}/`);
 }
 
 /**
@@ -54,5 +54,5 @@ export function avatarPortraitSrc(
   if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
   const w = Math.round(width * 2);
   const h = Math.round(w * ratio);
-  return url.replace('/upload/', `/upload/f_auto,q_auto,c_fill,g_face,w_${w},h_${h}/`);
+  return url.replace('/upload/', `/upload/f_webp,q_auto,c_fill,g_face,w_${w},h_${h}/`);
 }
