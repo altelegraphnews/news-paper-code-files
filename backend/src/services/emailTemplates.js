@@ -22,7 +22,10 @@ const C = {
 // A short morse motif ("·— · —") rendered in gold, echoing the site's dividers
 const morse = `<div style="font-size:13px;letter-spacing:6px;color:${C.gold};line-height:1;margin:0">· — ·&nbsp;&nbsp;— ·&nbsp;&nbsp;· —</div>`;
 
-const shell = (inner) => `
+const ACK_NOTE = 'هذه رسالة آليّة للإشعار بالاستلام، ولا تتطلّب ردّاً.';
+const REPLY_NOTE = 'يمكنكم الردّ على هذه الرسالة مباشرةً للتواصل مع هيئة التحرير.';
+
+const shell = (inner, footerNote = ACK_NOTE) => `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${C.cream};">
@@ -43,7 +46,7 @@ const shell = (inner) => `
           <div style="margin-bottom:10px;">${morse}</div>
           <a href="https://al-telegraph.com" style="color:${C.gold};text-decoration:none;font-family:Georgia,serif;font-size:13px;">al-telegraph.com</a>
           <div style="font-family:'Amiri',Georgia,serif;font-size:12px;color:${C.muted};margin-top:8px;line-height:1.7;">
-            هذه رسالة آليّة للإشعار بالاستلام، ولا تتطلّب ردّاً.
+            ${footerNote}
           </div>
         </td></tr>
       </table>
@@ -51,30 +54,57 @@ const shell = (inner) => `
   </table>
 </body></html>`;
 
+/* ─── Shared pieces ──────────────────────────────────────────────────────── */
+
+// Writer names, article titles and editors' notes are written by people and end
+// up inside an HTML document. Escape every one of them on the way in.
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[<>&"']/g, (c) => (
+    { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+
+const p = (t) =>
+  `<p style="font-family:'Amiri',Georgia,serif;font-size:17px;line-height:2.05;color:${C.text};margin:0 0 18px;">${t}</p>`;
+
+const eyebrow = (label) =>
+  `<div style="font-family:Georgia,serif;font-size:12px;letter-spacing:3px;color:${C.gold};margin-bottom:10px;">${label}</div>`;
+
+const heading = (text) =>
+  `<h1 style="font-family:'Amiri',Georgia,serif;font-size:25px;font-weight:700;color:${C.ink};margin:0 0 22px;line-height:1.5;">${text}</h1>`;
+
+const signature = `
+    <div style="margin-top:26px;padding-top:18px;border-top:1px solid ${C.border};">
+      <div style="font-family:'Amiri',Georgia,serif;font-size:16px;font-weight:700;color:${C.ink};">هيئة التحرير</div>
+      <div style="font-family:'Amiri',Georgia,serif;font-size:14px;color:${C.textSecondary};margin-top:2px;">مجلّة التلغراف — مجلة أدبية وثقافية</div>
+    </div>`;
+
+const greet = (name) => (name ? `${escapeHtml(name)}،` : 'تحيّةَ التلغراف،');
+
+const quoted = (title) => (title ? `الموسومة بـ«${escapeHtml(title)}»` : '');
+
+// A subject line is a header: a newline in one would split it.
+const subjectSafe = (title) => String(title).replace(/[\r\n]+/g, ' ').trim().slice(0, 80);
+
 /**
  * Acknowledgement sent to a writer when their submission is received.
  * Formal Arabic (فصحى), matching the magazine's editorial voice.
  */
 const submissionAck = ({ senderName, title } = {}) => {
+  // A subject-less email is titled «مساهمة بريدية — <date>» by the ingester;
+  // quoting that back reads like a mistake, so it is treated as no title.
   const hasTitle = title && !/^مساهمة بريدية —/.test(title);
-  const salutation = senderName ? `${senderName}،` : 'تحيّةَ التلغراف،';
   const worked = hasTitle
-    ? `وصولَ مساهمتكم الموسومة بـ«${title}»، وقد أُدرِجت ضمن أعمالٍ تنتظر النظر والتقويم.`
+    ? `وصولَ مساهمتكم ${quoted(title)}، وقد أُدرِجت ضمن أعمالٍ تنتظر النظر والتقويم.`
     : `وصولَ مساهمتكم، وقد أُدرِجت ضمن أعمالٍ تنتظر النظر والتقويم.`;
 
-  const p = (t) => `<p style="font-family:'Amiri',Georgia,serif;font-size:17px;line-height:2.05;color:${C.text};margin:0 0 18px;">${t}</p>`;
-
   const inner = `
-    <div style="font-family:Georgia,serif;font-size:12px;letter-spacing:3px;color:${C.gold};margin-bottom:10px;">إشعار استلام</div>
-    <h1 style="font-family:'Amiri',Georgia,serif;font-size:25px;font-weight:700;color:${C.ink};margin:0 0 22px;line-height:1.5;">تسلَّمنا مساهمتكم بكلّ تقدير</h1>
-    ${p(salutation)}
+    ${eyebrow('إشعار استلام')}
+    ${heading('تسلَّمنا مساهمتكم بكلّ تقدير')}
+    ${p(greet(senderName))}
     ${p(`يسرُّ هيئةَ تحرير مجلّة التلغراف أن تؤكّد لكم ${worked}`)}
     ${p('نقرأ ما يصلنا بعنايةٍ وأناة، ونُعلمكم بقرار النشر خلال مدّةٍ تتراوح بين يومٍ وأربعة أيامٍ من تاريخ هذه الرسالة.')}
     ${p('نشكر لكم ثقتكم بالتلغراف، واختياركم إيّاه منبراً لكلمتكم.')}
-    <div style="margin-top:26px;padding-top:18px;border-top:1px solid ${C.border};">
-      <div style="font-family:'Amiri',Georgia,serif;font-size:16px;font-weight:700;color:${C.ink};">هيئة التحرير</div>
-      <div style="font-family:'Amiri',Georgia,serif;font-size:14px;color:${C.textSecondary};margin-top:2px;">مجلّة التلغراف — مجلة أدبية وثقافية</div>
-    </div>`;
+    ${signature}`;
 
   return {
     subject: 'إشعار استلام مساهمتكم — مجلّة التلغراف',
@@ -82,4 +112,62 @@ const submissionAck = ({ senderName, title } = {}) => {
   };
 };
 
-module.exports = { submissionAck };
+/* ─── Editorial decision letters ──────────────────────────────────────────
+   Sent when an editor approves or returns a submission. The acknowledgement
+   promises «نُعلمكم بقرار النشر», so these are the other half of a promise the
+   magazine already makes to every writer — until they existed, a rejected
+   writer was told nothing at all and had no way to learn why.                */
+
+/**
+ * Article returned to its writer, carrying the editor's reason.
+ */
+const submissionRejected = ({ senderName, title, note } = {}) => {
+  const reason = String(note || '').trim();
+  const inner = `
+    ${eyebrow('قرار التحرير')}
+    ${heading('شكراً لمساهمتكم، ولنا عليها ملاحظات')}
+    ${p(greet(senderName))}
+    ${p(`قرأت هيئةُ تحرير مجلّة التلغراف مساهمتَكم ${quoted(title)} بعنايةٍ وتقدير، ونعتذر عن عدم نشرها بصيغتها الحالية.`)}
+    ${reason ? `
+    <div style="background:${C.cream};border-right:3px solid ${C.gold};border-radius:3px;padding:16px 18px;margin:0 0 20px;">
+      <div style="font-family:Georgia,serif;font-size:11px;letter-spacing:2px;color:${C.gold};margin-bottom:8px;">ملاحظات هيئة التحرير</div>
+      <div style="font-family:'Amiri',Georgia,serif;font-size:16px;line-height:1.95;color:${C.text};white-space:pre-line;">${escapeHtml(reason)}</div>
+    </div>` : ''}
+    ${p('نرحّب بمساهمةٍ منقّحةٍ في ضوء ما تقدّم، وبكلّ ما تجودون به مستقبلاً. ولكم أن تردّوا على هذه الرسالة إن أردتم مزيدَ إيضاح.')}
+    ${p('نشكر لكم ثقتكم بالتلغراف.')}
+    ${signature}`;
+
+  return {
+    subject: title
+      ? `بشأن مساهمتكم «${subjectSafe(title)}» — مجلّة التلغراف`
+      : 'بشأن مساهمتكم — مجلّة التلغراف',
+    html: shell(inner, REPLY_NOTE),
+  };
+};
+
+/**
+ * Article accepted and published — the other outcome the acknowledgement
+ * promised to report.
+ */
+const submissionApproved = ({ senderName, title, url } = {}) => {
+  const inner = `
+    ${eyebrow('قرار التحرير')}
+    ${heading('يسرّنا أن نُعلمكم بنشر مساهمتكم')}
+    ${p(greet(senderName))}
+    ${p(`بعد قراءةٍ وتقويم، قرّرت هيئةُ تحرير مجلّة التلغراف نشرَ مساهمتِكم ${quoted(title)}، وقد صارت متاحةً لقرّاء المجلّة.`)}
+    ${url ? `
+    <div style="margin:0 0 22px;">
+      <a href="${escapeHtml(url)}" style="display:inline-block;background:${C.ink};color:${C.goldLight};font-family:'Amiri',Georgia,serif;font-size:16px;text-decoration:none;padding:12px 26px;border-radius:3px;">قراءة المقال المنشور</a>
+    </div>` : ''}
+    ${p('نشكر لكم ثقتكم بالتلغراف، واختياركم إيّاه منبراً لكلمتكم، ونتطلّع إلى المزيد.')}
+    ${signature}`;
+
+  return {
+    subject: title
+      ? `نُشرت مساهمتكم «${subjectSafe(title)}» — مجلّة التلغراف`
+      : 'نُشرت مساهمتكم — مجلّة التلغراف',
+    html: shell(inner, REPLY_NOTE),
+  };
+};
+
+module.exports = { submissionAck, submissionRejected, submissionApproved };

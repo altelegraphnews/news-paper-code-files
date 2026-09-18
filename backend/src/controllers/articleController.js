@@ -9,6 +9,7 @@ const { sanitizeHtml } = require('../utils/sanitizer');
 // Fans out to every configured network (Telegram, Facebook Page); each owns its
 // own once-only guard and never throws, so publishing is unaffected either way.
 const { announceArticle } = require('../services/socialService');
+const editorialNotifier = require('../services/editorialNotifier');
 
 // Mirrors the enum on the Article schema. Used to validate a caller-supplied
 // ?status= before it is allowed anywhere near the query filter.
@@ -658,6 +659,31 @@ const submitForReview = async (req, res, next) => {
 };
 
 /**
+ * Read back what a decision letter needs — the writer's name and address — and
+ * hand it to the notifier.
+ *
+ * A separate read because the review routes work on a bare document: `author`
+ * is an id there, and `submission` (which carries the address a reader actually
+ * submitted from) is `select: false` and has to be asked for by name.
+ *
+ * Awaited so a mail failure is logged against the right request, but never
+ * rethrown: the decision is already saved, and an editor must not see their own
+ * click fail because a mail provider did.
+ */
+const notifyWriter = async (articleId, send) => {
+  try {
+    const article = await Article.findById(articleId)
+      .select('title slug category author +submission')
+      .populate('author', 'name email')
+      .populate('category', 'slug')
+      .lean();
+    if (article) await send(article);
+  } catch (err) {
+    logger.error(`Decision letter failed for ${articleId}: ${err.message}`);
+  }
+};
+
+/**
  * POST /articles/:id/approve
  * Editor approves a pending article → published
  */
@@ -703,6 +729,8 @@ const approveArticle = async (req, res, next) => {
       resourceId: article._id, resourceTitle: article.title, severity: 'medium',
     });
 
+    await notifyWriter(article._id, (a) => editorialNotifier.notifyApproved(a));
+
     announceArticle(article._id);
 
     return success(res, { id: article._id, status: 'published', publishedAt: article.publishedAt }, 'تمت الموافقة على المقال ونشره');
@@ -738,6 +766,10 @@ const rejectArticle = async (req, res, next) => {
       req, action: 'article.reject', resourceType: 'article',
       resourceId: article._id, resourceTitle: article.title, severity: 'medium',
     });
+
+    // The whole point of returning an article is the note. Until this existed
+    // the writer was told nothing — «لم يصلنا سبب الرفض» was exactly right.
+    await notifyWriter(article._id, (a) => editorialNotifier.notifyRejected(a, note));
 
     return success(res, { id: article._id, status: 'rejected' }, 'تم إرجاع المقال إلى الكاتب');
   } catch (error) { next(error); }
