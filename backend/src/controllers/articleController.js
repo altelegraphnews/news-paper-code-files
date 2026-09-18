@@ -384,7 +384,11 @@ const updateArticle = async (req, res, next) => {
     if (publishAt !== undefined) article.publishAt = publishAt;
     if (expireAt !== undefined) article.expireAt = expireAt;
     if (seo !== undefined) article.seo = { ...article.seo, ...seo };
-    if (ogImage !== undefined) article.ogImage = ogImage;
+    // `null` is the admin editor saying the featured image was removed; an
+    // object without a url means the same thing. Either way it has to clear the
+    // stored one, not be ignored — being ignored is how a deleted cover kept
+    // coming back.
+    if (ogImage !== undefined) article.ogImage = ogImage?.url ? ogImage : {};
     if (relatedArticles !== undefined) article.relatedArticles = relatedArticles;
     if (source !== undefined) article.source = source;
     if (commentsEnabled !== undefined) article.commentsEnabled = commentsEnabled;

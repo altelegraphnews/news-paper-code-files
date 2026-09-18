@@ -283,6 +283,10 @@ export default function ArticleEditor() {
   // Auto-save draft every 30s
   useEffect(() => {
     if (isNew || !['draft', 'rejected'].includes(form.status)) return
+    // Never while the article is still arriving: until it lands, `form` is the
+    // blank one this screen mounted with, and saving that would write it over
+    // the real article.
+    if (loading) return
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
     autoSaveTimer.current = setTimeout(() => {
       handleSave(true)
@@ -306,7 +310,11 @@ export default function ArticleEditor() {
     isFeatured: form.isFeatured,
     isSponsored: form.isSponsored,
     commentsEnabled: form.commentsEnabled,
-    ogImage: form.ogImage.url ? form.ogImage : undefined,
+    // null, never undefined: undefined is dropped from the JSON body, and the
+    // API leaves out what it is not sent. Removing the featured image therefore
+    // never reached the server — the picture was gone from the form and back
+    // again the next time the article was opened. null says «cleared».
+    ogImage: form.ogImage.url ? form.ogImage : null,
     seo: {
       title: form.seo.title || undefined,
       description: form.seo.description || undefined,
