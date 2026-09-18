@@ -148,6 +148,15 @@ export default function ReviewQueue() {
                               <FileText className="w-3 h-3" /> ملف Word
                             </span>
                           )}
+                          {/* The byline the writer gave. It was captured all
+                              along and shown nowhere, so a submission read as
+                              anonymous even when it was not. */}
+                          <span className="inline-flex items-center gap-1 text-[11px] text-gray-600 dark:text-gray-300">
+                            <User className="w-3 h-3 text-gold-600" />
+                            {article.submission.senderName?.trim() || (
+                              <span className="text-amber-600 dark:text-amber-400">بلا اسم</span>
+                            )}
+                          </span>
                           {article.submission.senderEmail && (
                             <span className="text-[11px] text-gray-400" dir="ltr">{article.submission.senderEmail}</span>
                           )}

@@ -202,6 +202,13 @@ const formSubmit = async (req, res, next) => {
     const title = (req.body.title || '').trim();
     const body = (req.body.body || '').trim();
 
+    // The byline, and the only place the form can capture it. It used to be
+    // optional in both the markup and here, so articles arrived unsigned and
+    // reached the review queue as anonymous work. Enforced server-side too,
+    // because the browser check is a courtesy — a direct POST skips it.
+    if (name.length < 2 || name.length > 100) {
+      return errors.badRequest(res, 'يرجى كتابة اسم الكاتب كما يظهر في التوقيع');
+    }
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return errors.badRequest(res, 'يرجى إدخال بريد إلكتروني صحيح');
     }

@@ -19,7 +19,7 @@ import { clsx } from 'clsx'
 import {
   Save, Send, Clock, Eye, ChevronDown, ChevronUp,
   Image as ImageIcon, X, AlertCircle, CheckCircle,
-  Tag, ClipboardCheck, XCircle, UserPlus, Upload, RefreshCw,
+  Tag, ClipboardCheck, XCircle, UserPlus, Upload, RefreshCw, Mail,
 } from 'lucide-react'
 
 interface ArticleForm {
@@ -187,6 +187,9 @@ export default function ArticleEditor() {
   const [mediaUploadPct, setMediaUploadPct] = useState(0)
   const [mediaDragging, setMediaDragging] = useState(false)
   const [showQuickWriter, setShowQuickWriter] = useState(false)
+  // Who sent the article in, when it came from the inbox or the site form.
+  // Read-only: the signature is still chosen from the dropdown below it.
+  const [submission, setSubmission] = useState<{ via?: string; senderName?: string; senderEmail?: string } | null>(null)
   const [mediaTarget, setMediaTarget] = useState<'featured' | 'content' | 'gallery'>('featured')
   // An array, not a Set: the order pictures are clicked becomes the gallery order.
   const [mediaSelection, setMediaSelection] = useState<any[]>([])
@@ -239,6 +242,7 @@ export default function ArticleEditor() {
           expiresAt: a.expireAt ? a.expireAt.slice(0, 16) : '',
           reviewNote: a.review?.note || '',
         })
+        setSubmission(a.submission || null)
         setSlugEdited(true)
       })
       .catch(() => toast.error('فشل في تحميل المقال'))
@@ -953,6 +957,29 @@ export default function ArticleEditor() {
                 </button>
               )}
               <p className="text-xs text-gray-400">ينشر المقال باسم الكاتب المحدد ويظهر في صفحته.</p>
+
+              {/* What the writer signed the submission with. Until this was
+                  shown, an article that arrived by mail or through the form
+                  reached this screen with nothing on it saying who wrote it,
+                  so it read as anonymous even when the name had been given. */}
+              {submission && (
+                <div className="mt-1 rounded-md border border-gold-200/70 dark:border-gold-700/40 bg-gold-50/60 dark:bg-gold-900/10 p-2.5 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gold-700 dark:text-gold-400">
+                    <Mail className="w-3 h-3" />
+                    {submission.via === 'form' ? 'أُرسل عبر الموقع' : 'وصل عبر البريد'}
+                  </div>
+                  <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {submission.senderName?.trim() || (
+                      <span className="text-amber-600 dark:text-amber-400">أرسله بلا اسم</span>
+                    )}
+                  </div>
+                  {submission.senderEmail && (
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 break-all" dir="ltr">
+                      {submission.senderEmail}
+                    </div>
+                  )}
+                </div>
+              )}
             </SideSection>
           )}
 

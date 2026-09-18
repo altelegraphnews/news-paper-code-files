@@ -122,6 +122,13 @@ const getArticle = async (req, res, next) => {
       ? Article.findOne({ _id: slug, isDeleted: { $ne: true } })
       : Article.findBySlug(slug);
 
+    // This is the public article route as well as the admin editor's, so the
+    // submitter's name and address — personal data that outlives publication —
+    // are only projected in for a caller who may edit. Everyone else keeps the
+    // schema's default, where the whole subdocument is deselected.
+    const canSeeSubmission = Boolean(req.user?.can?.('articles.editAll'));
+    if (canSeeSubmission) baseQuery.select('+submission');
+
     const article = await baseQuery
       .populate('category', 'name slug color icon')
       .populate('subcategory', 'name slug')

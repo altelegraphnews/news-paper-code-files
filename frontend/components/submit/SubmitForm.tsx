@@ -35,11 +35,15 @@ export default function SubmitForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    // The byline. Without it the article reaches the desk unsigned and the
+    // editor has no way to know who wrote it — the field read as optional, so
+    // writers skipped it and their work arrived anonymous.
+    if (name.trim().length < 2) { setError('يرجى كتابة اسمك كما تريده أن يظهر في التوقيع.'); return; }
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setError('يرجى إدخال بريد إلكتروني صحيح.'); return; }
     if (!title && !body && !docx) { setError('يرجى كتابة المقال أو إرفاق ملف Word.'); return; }
 
     const fd = new FormData();
-    fd.append('name', name);
+    fd.append('name', name.trim());
     fd.append('email', email);
     fd.append('title', title);
     fd.append('body', body);
@@ -124,8 +128,8 @@ export default function SubmitForm() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className={labelClass} style={labelStyle}>الاسم</label>
-          <input className={inputClass} style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="اسمك كما يظهر في التوقيع" />
+          <label className={labelClass} style={labelStyle}>الاسم <span className="text-accent">*</span></label>
+          <input required className={inputClass} style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} placeholder="اسمك كما يظهر في التوقيع" />
         </div>
         <div>
           <label className={labelClass} style={labelStyle}>البريد الإلكتروني <span className="text-accent">*</span></label>
