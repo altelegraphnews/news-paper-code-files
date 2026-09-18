@@ -37,3 +37,13 @@ backend/scripts/real-content/dry-run-output.html
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# ───────── Local image backup ─────────
+# cloudinary-prune-derived.js --backup downloads every original here before it
+# is allowed to delete anything. Over a gigabyte of photographs; it is a safety
+# net on your disk, not source code.
+backend/backup/
+
+# ───────── Claude Code local settings ─────────
+# Records approved commands verbatim, which can include tokens pasted into one.
+.claude/settings.local.json
