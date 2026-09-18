@@ -176,6 +176,21 @@ export default async function RootLayout({
         {process.env.NEXT_PUBLIC_FACEBOOK_APP_ID ? (
           <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FACEBOOK_APP_ID} />
         ) : null}
+        {/* Which Facebook Page publishes this domain. Without these, Facebook's
+            «About this content» panel on every shared article answers «Could not
+            find a Facebook Page for al-telegraph.com» — it has no way to tie the
+            link back to the Page that posted it, which on a domain registered
+            weeks ago is also what its spam heuristics read. `article:publisher`
+            is the Page's URL and `fb:pages` its numeric id; both are <meta
+            property>, which Next's `other` field cannot emit, hence by hand.
+            They pair with claiming the domain in Meta Business Suite — the tag
+            states the claim, the verification proves it. */}
+        {process.env.NEXT_PUBLIC_FACEBOOK_PAGE_URL ? (
+          <meta property="article:publisher" content={process.env.NEXT_PUBLIC_FACEBOOK_PAGE_URL} />
+        ) : null}
+        {process.env.NEXT_PUBLIC_FACEBOOK_PAGE_ID ? (
+          <meta property="fb:pages" content={process.env.NEXT_PUBLIC_FACEBOOK_PAGE_ID} />
+        ) : null}
         {/* Who the publisher is, and how to search the site — this is what
             Google reads for the brand panel and the sitelinks search box. */}
         <script

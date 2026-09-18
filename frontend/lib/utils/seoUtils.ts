@@ -111,23 +111,42 @@ export function getTagUrl(tag: string): string {
  * Social preview image, cropped to the 1.91:1 card Facebook, X and LinkedIn
  * expect.
  *
- * The dimensions we advertise have to be the dimensions we actually serve.
- * Article covers are whatever size they were uploaded — one live example is
- * 549×364 — so declaring a flat 1200×630 told Facebook to wait for an image
- * that never arrived, and its share dialog sat spinning. Cloudinary crops to
- * the real thing; non-Cloudinary sources return unchanged and the caller then
- * declares no dimensions rather than guessing.
+ * Everything about this URL is pinned, because a share card is fetched by a
+ * crawler we cannot negotiate with:
+ *
+ *  - The dimensions we advertise have to be the dimensions we actually serve.
+ *    Article covers are whatever size they were uploaded — one live example is
+ *    549×364 — so declaring a flat 1200×630 told Facebook to wait for an image
+ *    that never arrived, and its share dialog sat spinning. Cloudinary crops to
+ *    the real thing; non-Cloudinary sources return unchanged and the caller then
+ *    declares no dimensions rather than guessing.
+ *
+ *  - The FORMAT has to be pinned too, and `f_auto` is the opposite of that.
+ *    With f_auto, Cloudinary picks the format from the caller's `Accept`
+ *    header: the same URL answers `image/jpeg` to a plain request and
+ *    `image/webp` to anything that lists webp — under a path still ending in
+ *    `.png`. Facebook reserves the card from og:image:width/height, then drops
+ *    an attachment whose bytes do not match the URL it was promised, which is
+ *    the blank 1200×630 box that showed up on most shared articles. So: f_jpg,
+ *    and the delivered extension rewritten to match, giving every crawler the
+ *    same JPEG no matter what it asks for.
  */
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
+/** What ogImageSrc guarantees it delivers — declared as og:image:type. */
+export const OG_IMAGE_TYPE = 'image/jpeg';
 
 export function ogImageSrc(url?: string | null): string | undefined {
   if (!url) return undefined;
   if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
-  return url.replace(
-    '/upload/',
-    `/upload/f_auto,q_auto,c_fill,g_auto,w_${OG_IMAGE_WIDTH},h_${OG_IMAGE_HEIGHT}/`
-  );
+  return url
+    .replace(
+      '/upload/',
+      `/upload/f_jpg,q_auto,c_fill,g_auto,w_${OG_IMAGE_WIDTH},h_${OG_IMAGE_HEIGHT}/`
+    )
+    // Cloudinary converts on the extension as well as on f_, and a crawler that
+    // trusts the extension must not be told `.png` about a JPEG.
+    .replace(/\.(png|webp|avif|gif|jpeg|tiff?|bmp|heic)$/i, '.jpg');
 }
 
 /** True only when we control the crop and therefore know the size. */

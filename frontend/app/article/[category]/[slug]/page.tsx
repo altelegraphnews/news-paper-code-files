@@ -26,6 +26,7 @@ import {
   isCloudinary,
   OG_IMAGE_WIDTH,
   OG_IMAGE_HEIGHT,
+  OG_IMAGE_TYPE,
   buildArticleSchema,
   buildBreadcrumbSchema,
   jsonLdScript,
@@ -77,10 +78,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = singleLine(article.seo?.title || article.title);
   const description = metaDescription(article.seo?.description || article.excerpt);
   const keywords = article.seo?.keywords?.length ? article.seo.keywords : article.tags;
-  // Serve the crop we advertise — see ogImageSrc.
+  // Serve the crop and the format we advertise — see ogImageSrc.
   const image = ogImageSrc(article.ogImage?.url);
   const imageAlt = singleLine(article.ogImage?.alt || article.title);
-  const knownSize = isCloudinary(article.ogImage?.url);
+  // True only for images we transform ourselves. Those we can describe down to
+  // the byte; a foreign URL is passed through and described no further, since a
+  // dimension or a MIME type we guessed wrong is worse than one we omitted.
+  const ours = isCloudinary(article.ogImage?.url);
 
   return {
     title,
@@ -94,8 +98,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       images: image
-        ? [knownSize
-            ? { url: image, alt: imageAlt, width: OG_IMAGE_WIDTH, height: OG_IMAGE_HEIGHT }
+        ? [ours
+            ? {
+                url: image,
+                secureUrl: image,
+                alt: imageAlt,
+                type: OG_IMAGE_TYPE,
+                width: OG_IMAGE_WIDTH,
+                height: OG_IMAGE_HEIGHT,
+              }
             : { url: image, alt: imageAlt }]
         : [],
       locale: 'ar_IQ',
