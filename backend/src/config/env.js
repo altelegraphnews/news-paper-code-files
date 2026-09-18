@@ -105,6 +105,13 @@ const config = {
     channelId: process.env.TELEGRAM_CHANNEL_ID || '',
   },
 
+  // Auto-announce newly published articles to a Facebook Page.
+  // Inert unless both are set: no token, no posting, no errors.
+  facebook: {
+    pageId: process.env.FACEBOOK_PAGE_ID || '',
+    pageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || '',
+  },
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
     publicMax: parseInt(process.env.RATE_LIMIT_PUBLIC_MAX, 10) || 100,

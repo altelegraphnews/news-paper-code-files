@@ -200,6 +200,16 @@ const articleSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Same idea, per network. Kept as its own field rather than folded into
+    // telegramPostedAt so the existing archive — every published article of
+    // which is already stamped as posted to Telegram — is not mistaken for
+    // already posted to the Page, and so one network failing cannot consume
+    // another's claim. Existing documents have no value here, which reads as
+    // null and is therefore claimable on their next publish.
+    facebookPostedAt: {
+      type: Date,
+      default: null,
+    },
     source: {
       name: String,
       url: String,

@@ -6,7 +6,9 @@ const { success, created, paginated, errors } = require('../utils/responseHelper
 const { generateUniqueSlug } = require('../utils/slugGenerator');
 const { calculateReadingTime, sanitizeExcerpt } = require('../utils/readingTime');
 const { sanitizeHtml } = require('../utils/sanitizer');
-const { announceArticle } = require('../services/telegramService');
+// Fans out to every configured network (Telegram, Facebook Page); each owns its
+// own once-only guard and never throws, so publishing is unaffected either way.
+const { announceArticle } = require('../services/socialService');
 
 // Mirrors the enum on the Article schema. Used to validate a caller-supplied
 // ?status= before it is allowed anywhere near the query filter.
