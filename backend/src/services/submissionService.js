@@ -84,12 +84,67 @@ const getSystemUser = async () => {
   return user;
 };
 
-// Match the sender to an existing writer/user by email
-const resolveAuthor = async (fromEmail, systemUser) => {
-  if (fromEmail) {
-    const match = await User.findOne({ email: fromEmail.toLowerCase().trim() }).select('_id');
+// A display name we are willing to put on an article. Rejects the cases where
+// a mail client puts the address itself in the display-name slot, which would
+// publish someone's email as their byline.
+const usableName = (raw) => {
+  const name = String(raw || '')
+    .replace(/^["'\s]+|["'\s]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (name.length < 2 || name.length > 100) return '';
+  if (/@/.test(name)) return '';
+  return name;
+};
+
+/**
+ * Give the submission a byline.
+ *
+ * In order: a writer we already know by address; failing that, a signature-only
+ * profile under the sender's own name; failing that, the placeholder.
+ *
+ * The middle step is the one that was missing. Every submission from an address
+ * we did not recognise was parked under the shared «مساهمة بريدية» account, so
+ * the article published under that instead of the writer's name — their name
+ * was sitting in submission.senderName the whole time, read by nothing. The
+ * profile is created exactly like the ones an editor makes on the «الكُتّاب»
+ * page: isProfileOnly, so it is a byline identity and can never log in.
+ *
+ * `matched` still means «this is an author we already had». A profile minted
+ * here is not that, and the review queue should go on flagging it so an editor
+ * confirms who the writer is before publishing.
+ */
+const resolveAuthor = async (fromEmail, systemUser, fromName) => {
+  const email = String(fromEmail || '').toLowerCase().trim();
+
+  if (email) {
+    const match = await User.findOne({ email }).select('_id');
     if (match) return { authorId: match._id, matched: true };
   }
+
+  const name = usableName(fromName);
+  if (email && name) {
+    try {
+      const profile = await User.create({
+        name,
+        email,
+        password: require('crypto').randomBytes(24).toString('hex'),
+        role: 'author',
+        isProfileOnly: true,
+        isActive: true,
+        isEmailVerified: true,
+      });
+      logger.info(`👤 Created byline profile "${name}" <${email}> for a submission`);
+      return { authorId: profile._id, matched: false };
+    } catch (err) {
+      // Two submissions from a new sender at once: the loser of the race reads
+      // back the winner's profile rather than falling to the placeholder.
+      const existing = await User.findOne({ email }).select('_id');
+      if (existing) return { authorId: existing._id, matched: false };
+      logger.warn(`Byline profile for <${email}> failed: ${err.message}`);
+    }
+  }
+
   return { authorId: systemUser._id, matched: false };
 };
 
@@ -175,7 +230,7 @@ const ingestSubmission = async (p) => {
   });
 
   // 4) Author + cover
-  const { authorId, matched } = await resolveAuthor(p.fromEmail, systemUser);
+  const { authorId, matched } = await resolveAuthor(p.fromEmail, systemUser, p.fromName);
   const cover = uploadedImages[0];
 
   const via = p.via === 'form' ? 'form' : 'email';
@@ -211,4 +266,4 @@ const ingestSubmission = async (p) => {
   return article;
 };
 
-module.exports = { ingestSubmission, cleanTitle, textToHtml, isDocx, isImage };
+module.exports = { ingestSubmission, cleanTitle, textToHtml, isDocx, isImage, usableName };
