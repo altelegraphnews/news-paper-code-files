@@ -8,7 +8,7 @@ require('../models/Category');
 require('../models/User');
 const config = require('../config/env');
 const logger = require('../utils/logger');
-const { writerName } = require('../utils/byline');
+const { bylineLine, AUTHOR_FIELDS } = require('../utils/byline');
 // The Page post reads the same whichever route sends it.
 const { articleUrl, buildMessage: pageMessage, plain } = require('./facebookService');
 
@@ -113,6 +113,29 @@ const readable = (link) => {
   }
 };
 
+// X's own count (twitter-text v3): characters in these ranges weigh 1, every
+// other one 2, an emoji 2 however many characters make it up, a link 23.
+const X_LIMIT = 280;
+const X_LINK = 23;
+const X_LIGHT = [[0x0000, 0x10ff], [0x2000, 0x200d], [0x2010, 0x201f], [0x2032, 0x2037]];
+
+/**
+ * How much of X's 280 a piece of text uses, never less than X will count.
+ * Every character is weighed on its own, so an emoji made of several comes
+ * out heavier than it is, and a link costs its full 23 on top of its own
+ * characters wherever one could begin. X would also read a name like "X.com"
+ * in a headline as a link, so guessing high is the only safe way to guess.
+ */
+const xWeight = (text) => {
+  const normal = text.normalize('NFC'); // X counts after normalising too
+  let weight = X_LINK * (normal.match(/https?:\/\/|\.[a-z]/gi) || []).length;
+  for (const ch of normal) {
+    const cp = ch.codePointAt(0);
+    weight += X_LIGHT.some(([lo, hi]) => cp >= lo && cp <= hi) ? 1 : 2;
+  }
+  return weight;
+};
+
 /**
  * What each network gets, keyed by Buffer's service name. The article's link
  * is the point everywhere; how it travels differs:
@@ -132,15 +155,20 @@ const NETWORKS = {
   twitter: {
     label: 'X',
     field: 'xPostedAt',
-    // X counts any link as 23 and Arabic as one per letter; the ✍️ is two
-    // UTF-16 units and X weighs it as two, so .length measures the byline
-    // exactly. The headline gets whatever the byline leaves of 280, up to 200,
-    // less one for the "…" a cut headline ends in, which X weighs as two.
+    // The headline is cut, one character at a time, until headline, writer,
+    // blank line and link weigh no more than 280. Only if no headline fits
+    // beside the writer's name does the name give way.
     build: (article, link) => {
-      const writer = writerName(article);
-      const byline = writer ? `\n✍️ بقلم: ${plain(writer, 100)}` : '';
-      const room = Math.min(200, 280 - 23 - 2 - 1 - byline.length);
-      return { text: `${plain(article.title, room)}${byline}\n\n${link}` };
+      const fit = (byline) => {
+        for (let room = 200; room > 0; room -= 1) {
+          const head = `${plain(article.title, room)}${byline}`;
+          if (xWeight(head) + 2 + X_LINK <= X_LIMIT) return head;
+        }
+        return null;
+      };
+      const byline = bylineLine(article);
+      const head = (byline ? fit(`\n${byline}`) : null) ?? fit('');
+      return { text: `${head}\n\n${link}` };
     },
   },
   facebook: {
@@ -266,7 +294,7 @@ const announceViaBuffer = async (articleId) => {
       $or: Object.values(NETWORKS).map(({ field }) => ({ [field]: null })),
     })
       .populate('category', 'name slug')
-      .populate('author', 'name email')
+      .populate('author', AUTHOR_FIELDS)
       .select('title excerpt slug category author ogImage')
       .lean();
     if (!article) return;

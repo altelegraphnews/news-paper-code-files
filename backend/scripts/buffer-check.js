@@ -13,7 +13,9 @@
  *
  * Railway injects BUFFER_API_KEY and FRONTEND_URL, so the key never has to be
  * pasted anywhere. The article is read from the public API rather than the
- * database, so this runs from any machine.
+ * database, so this runs from any machine — and since the public API keeps
+ * writers' emails private, the drafts carry no «بقلم» line: without the email
+ * a writer cannot be told from the submissions placeholder (utils/byline).
  */
 
 require('dotenv').config();

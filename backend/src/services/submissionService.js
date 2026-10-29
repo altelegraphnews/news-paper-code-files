@@ -13,6 +13,7 @@ const User = require('../models/User');
 const { generateUniqueSlug } = require('../utils/slugGenerator');
 const { calculateReadingTime, sanitizeExcerpt } = require('../utils/readingTime');
 const { sanitizeHtml } = require('../utils/sanitizer');
+const { PLACEHOLDER_EMAIL } = require('../utils/byline');
 const { uploadBuffer } = require('./cloudinaryService');
 const config = require('../config/env');
 const logger = require('../utils/logger');
@@ -67,7 +68,7 @@ const docxToHtml = async (buffer) => {
 // A stable, login-disabled system profile used as the placeholder byline /
 // editedBy for submissions whose sender doesn't match a known writer.
 const getSystemUser = async () => {
-  const email = 'submissions-system@al-telegraph.com';
+  const email = PLACEHOLDER_EMAIL;
   let user = await User.findOne({ email });
   if (!user) {
     user = await User.create({

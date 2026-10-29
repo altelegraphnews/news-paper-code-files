@@ -8,7 +8,7 @@ require('../models/Category');
 require('../models/User');
 const config = require('../config/env');
 const logger = require('../utils/logger');
-const { writerName } = require('../utils/byline');
+const { bylineLine, AUTHOR_FIELDS } = require('../utils/byline');
 
 // Pinned rather than floating: Graph drops old versions on a schedule, and a
 // silent bump is how a working integration starts failing after a deploy.
@@ -95,8 +95,8 @@ const buildMessage = (article) => {
   if (article.category?.name) lines.push(`🗞 ${plain(article.category.name, 80)}`);
   lines.push(plain(article.title, 200));
 
-  const writer = writerName(article);
-  if (writer) lines.push(`✍️ بقلم: ${plain(writer, 100)}`);
+  const byline = bylineLine(article);
+  if (byline) lines.push(byline);
 
   const excerpt = plain(article.excerpt, 320);
   if (excerpt) lines.push('', excerpt);
@@ -132,7 +132,7 @@ const announceOnFacebook = async (articleId) => {
 
     const article = await Article.findById(articleId)
       .populate('category', 'name slug')
-      .populate('author', 'name email')
+      .populate('author', AUTHOR_FIELDS)
       .select('title excerpt slug category author')
       .lean();
     if (!article) throw new Error('article vanished between claim and send');

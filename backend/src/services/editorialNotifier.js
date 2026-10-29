@@ -24,8 +24,8 @@ const logger = require('../utils/logger');
 
 // The login-disabled account submissions are parked under when the sender is
 // nobody we know. It is a placeholder, not a person — mailing it is mailing
-// ourselves. Kept in step with submissionService.getSystemUser.
-const SYSTEM_ADDRESS = 'submissions-system@al-telegraph.com';
+// ourselves. The same constant submissionService.getSystemUser creates it with.
+const { PLACEHOLDER_EMAIL: SYSTEM_ADDRESS } = require('../utils/byline');
 
 const isRealAddress = (email) => {
   const value = String(email || '').trim().toLowerCase();

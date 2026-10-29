@@ -8,7 +8,7 @@ require('../models/Category');
 require('../models/User');
 const config = require('../config/env');
 const logger = require('../utils/logger');
-const { writerName } = require('../utils/byline');
+const { bylineLine, AUTHOR_FIELDS } = require('../utils/byline');
 
 const API_BASE = 'https://api.telegram.org';
 
@@ -65,8 +65,8 @@ const buildMessage = (article) => {
   if (article.category?.name) lines.push(`🗞 <b>${escapeHtml(article.category.name)}</b>`);
   lines.push(`<b>${escapeHtml(trim(article.title, 200))}</b>`);
 
-  const writer = writerName(article);
-  if (writer) lines.push(`✍️ بقلم: ${escapeHtml(trim(writer, 100))}`);
+  const byline = bylineLine(article);
+  if (byline) lines.push(escapeHtml(byline));
 
   const excerpt = trim(article.excerpt, 320);
   if (excerpt) lines.push('', escapeHtml(excerpt));
@@ -102,7 +102,7 @@ const announceArticle = async (articleId) => {
 
     const article = await Article.findById(articleId)
       .populate('category', 'name slug')
-      .populate('author', 'name email')
+      .populate('author', AUTHOR_FIELDS)
       .select('title excerpt slug category author')
       .lean();
     if (!article) throw new Error('article vanished between claim and send');
