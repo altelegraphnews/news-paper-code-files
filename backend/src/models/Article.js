@@ -206,7 +206,21 @@ const articleSchema = new mongoose.Schema(
     // already posted to the Page, and so one network failing cannot consume
     // another's claim. Existing documents have no value here, which reads as
     // null and is therefore claimable on their next publish.
+    //
+    // It records that the article is on the Page, not which route put it
+    // there: the direct announcer and Buffer both claim this one field, so
+    // configuring both cannot post an article to the Page twice.
     facebookPostedAt: {
+      type: Date,
+      default: null,
+    },
+    // Posted through Buffer, which reaches X and Instagram where we have no
+    // direct integration. Separate fields for the same reason as above.
+    xPostedAt: {
+      type: Date,
+      default: null,
+    },
+    instagramPostedAt: {
       type: Date,
       default: null,
     },

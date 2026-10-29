@@ -112,6 +112,13 @@ const config = {
     pageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || '',
   },
 
+  // Auto-announce newly published articles to X, the Facebook Page and
+  // Instagram through Buffer, which posts with its own access to each network.
+  // Inert unless the key is set: no key, no posting, no errors.
+  buffer: {
+    apiKey: process.env.BUFFER_API_KEY || '',
+  },
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
     publicMax: parseInt(process.env.RATE_LIMIT_PUBLIC_MAX, 10) || 100,

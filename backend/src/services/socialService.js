@@ -2,6 +2,7 @@
 
 const { announceArticle: announceOnTelegram } = require('./telegramService');
 const { announceOnFacebook } = require('./facebookService');
+const { announceViaBuffer } = require('./bufferService');
 
 /**
  * Fan one publish out to every configured network.
@@ -20,6 +21,7 @@ const { announceOnFacebook } = require('./facebookService');
 const announceArticle = (articleId) => {
   announceOnTelegram(articleId);
   announceOnFacebook(articleId);
+  announceViaBuffer(articleId);
 };
 
 module.exports = { announceArticle };

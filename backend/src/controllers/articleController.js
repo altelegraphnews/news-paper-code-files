@@ -6,7 +6,8 @@ const { success, created, paginated, errors } = require('../utils/responseHelper
 const { generateUniqueSlug } = require('../utils/slugGenerator');
 const { calculateReadingTime, sanitizeExcerpt } = require('../utils/readingTime');
 const { sanitizeHtml } = require('../utils/sanitizer');
-// Fans out to every configured network (Telegram, Facebook Page); each owns its
+// Fans out to every configured network (Telegram, Facebook Page, and X /
+// Facebook / Instagram through Buffer); each owns its
 // own once-only guard and never throws, so publishing is unaffected either way.
 const { announceArticle } = require('../services/socialService');
 const editorialNotifier = require('../services/editorialNotifier');

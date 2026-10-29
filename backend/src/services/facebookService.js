@@ -147,4 +147,4 @@ const announceOnFacebook = async (articleId) => {
   }
 };
 
-module.exports = { isConfigured, announceOnFacebook, buildMessage, articleUrl, rescrape };
+module.exports = { isConfigured, announceOnFacebook, buildMessage, articleUrl, rescrape, plain };
