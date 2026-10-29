@@ -1,12 +1,14 @@
 'use strict';
 
 const Article = require('../models/Article');
-// Required for its side effect: populate('category') needs the model
-// registered, and this service must not depend on some other module having
-// loaded it first.
+// Required for their side effect: populate('category') and populate('author')
+// need the models registered, and this service must not depend on some other
+// module having loaded them first.
 require('../models/Category');
+require('../models/User');
 const config = require('../config/env');
 const logger = require('../utils/logger');
+const { writerName } = require('../utils/byline');
 // The Page post reads the same whichever route sends it.
 const { articleUrl, buildMessage: pageMessage, plain } = require('./facebookService');
 
@@ -115,7 +117,8 @@ const readable = (link) => {
  * What each network gets, keyed by Buffer's service name. The article's link
  * is the point everywhere; how it travels differs:
  *
- *  - X builds a card from the page's Open Graph tags, so headline and link.
+ *  - X builds a card from the page's Open Graph tags, so headline, writer
+ *    and link.
  *  - Facebook gets the link as an attachment, so the Page shows a card rather
  *    than a bare URL, under the same message the direct Page announcer writes.
  *  - Instagram has no link posts and no clickable links in captions. Every
@@ -129,9 +132,16 @@ const NETWORKS = {
   twitter: {
     label: 'X',
     field: 'xPostedAt',
-    // X counts any link as 23 characters and Arabic as one per letter, so a
-    // 200-character headline always fits in 280.
-    build: (article, link) => ({ text: `${plain(article.title, 200)}\n\n${link}` }),
+    // X counts any link as 23 and Arabic as one per letter; the ✍️ is two
+    // UTF-16 units and X weighs it as two, so .length measures the byline
+    // exactly. The headline gets whatever the byline leaves of 280, up to 200,
+    // less one for the "…" a cut headline ends in, which X weighs as two.
+    build: (article, link) => {
+      const writer = writerName(article);
+      const byline = writer ? `\n✍️ بقلم: ${plain(writer, 100)}` : '';
+      const room = Math.min(200, 280 - 23 - 2 - 1 - byline.length);
+      return { text: `${plain(article.title, room)}${byline}\n\n${link}` };
+    },
   },
   facebook: {
     label: 'Facebook',
@@ -256,7 +266,8 @@ const announceViaBuffer = async (articleId) => {
       $or: Object.values(NETWORKS).map(({ field }) => ({ [field]: null })),
     })
       .populate('category', 'name slug')
-      .select('title excerpt slug category ogImage')
+      .populate('author', 'name email')
+      .select('title excerpt slug category author ogImage')
       .lean();
     if (!article) return;
 

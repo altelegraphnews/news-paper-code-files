@@ -1,12 +1,14 @@
 'use strict';
 
 const Article = require('../models/Article');
-// Required for its side effect: populate('category') needs the model
-// registered, and this service must not depend on some other module having
-// loaded it first.
+// Required for their side effect: populate('category') and populate('author')
+// need the models registered, and this service must not depend on some other
+// module having loaded them first.
 require('../models/Category');
+require('../models/User');
 const config = require('../config/env');
 const logger = require('../utils/logger');
+const { writerName } = require('../utils/byline');
 
 const API_BASE = 'https://api.telegram.org';
 
@@ -57,11 +59,14 @@ const sendMessage = async (text) => {
   return body.result;
 };
 
-/** The channel post: section, headline, excerpt, link. */
+/** The channel post: section, headline, writer, excerpt, link. */
 const buildMessage = (article) => {
   const lines = [];
   if (article.category?.name) lines.push(`🗞 <b>${escapeHtml(article.category.name)}</b>`);
   lines.push(`<b>${escapeHtml(trim(article.title, 200))}</b>`);
+
+  const writer = writerName(article);
+  if (writer) lines.push(`✍️ بقلم: ${escapeHtml(trim(writer, 100))}`);
 
   const excerpt = trim(article.excerpt, 320);
   if (excerpt) lines.push('', escapeHtml(excerpt));
@@ -97,7 +102,8 @@ const announceArticle = async (articleId) => {
 
     const article = await Article.findById(articleId)
       .populate('category', 'name slug')
-      .select('title excerpt slug category')
+      .populate('author', 'name email')
+      .select('title excerpt slug category author')
       .lean();
     if (!article) throw new Error('article vanished between claim and send');
 
