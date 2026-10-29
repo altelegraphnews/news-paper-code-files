@@ -138,6 +138,8 @@ const start = async () => {
     const server = app.listen(PORT, () => {
       logger.info(`✅ AL-WID API running on port ${PORT} [${config.env}]`);
       logger.info(`📖 API base: http://localhost:${PORT}${apiBase}`);
+      // Keep each finished day's readership before the raw logs expire.
+      require('./src/services/statsService').startDailyRollup();
     });
 
     // Graceful shutdown

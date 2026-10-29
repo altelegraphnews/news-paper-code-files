@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { analyticsApi } from '../api/analytics'
 import { apiClient } from '../api/client'
@@ -12,9 +12,7 @@ import {
   Users, Image as ImageIcon, Settings,
 } from 'lucide-react'
 import { timeAgo } from '../utils/dateUtils'
-
-// recharts is heavy — split it out so the dashboard paints immediately
-const ViewsChart = lazy(() => import('../components/charts/ViewsChart'))
+import VisitorStats from '../components/dashboard/VisitorStats'
 
 function formatNumber(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + 'م'
@@ -172,25 +170,19 @@ function WriterDashboard() {
    ───────────────────────────────────────────── */
 function EditorialDashboard() {
   const [stats, setStats] = useState<any>(null)
-  const [viewsData, setViewsData] = useState<any[]>([])
-  const [trending, setTrending] = useState<any[]>([])
   const [pendingCount, setPendingCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [dashRes, trendRes, viewsRes, pendingRes] = await Promise.all([
+        const [dashRes, pendingRes] = await Promise.all([
           analyticsApi.overview().catch(() => ({ data: { data: {} } })),
-          analyticsApi.trending(8).catch(() => ({ data: { data: [] } })),
-          analyticsApi.views('30d').catch(() => ({ data: { data: [] } })),
           apiClient.get('/articles/pending-count').catch(() => ({ data: { data: { count: 0 } } })),
         ])
 
         const dash = dashRes.data?.data || {}
         setStats(dash.stats || dash)
-        setViewsData(Array.isArray(viewsRes.data?.data) ? viewsRes.data.data : (dash.viewsOverTime || []))
-        setTrending(Array.isArray(trendRes.data?.data) ? trendRes.data.data : [])
         setPendingCount(pendingRes.data?.data?.count ?? 0)
       } catch {
         // ignore
@@ -271,56 +263,8 @@ function EditorialDashboard() {
         ))}
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Views over time */}
-        <div className="card p-5">
-          <h2 className="font-heading font-bold text-gray-900 dark:text-gray-100 mb-4">المشاهدات خلال 30 يوماً</h2>
-          {viewsData.length > 0 ? (
-            <Suspense fallback={<Skeleton className="h-[220px] rounded-md" />}>
-              <ViewsChart data={viewsData} formatNumber={formatNumber} />
-            </Suspense>
-          ) : (
-            <div className="h-[220px] flex items-center justify-center text-gray-400 text-sm">
-              لا توجد بيانات بعد
-            </div>
-          )}
-        </div>
-
-        {/* Trending articles */}
-        <div className="card p-5">
-          <h2 className="font-heading font-bold text-gray-900 dark:text-gray-100 mb-4">الأكثر قراءة</h2>
-          {trending.length > 0 ? (
-            <ol className="space-y-3">
-              {trending.slice(0, 7).map((article: any, i: number) => (
-                <li key={article._id} className="flex items-start gap-3 group">
-                  <span
-                    className="font-heading text-3xl font-bold leading-none w-8 flex-shrink-0 text-transparent group-hover:text-gold-500 transition-colors"
-                    style={{ WebkitTextStroke: '1.2px rgba(184, 146, 61, 0.75)' }}
-                  >
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <Link
-                      to={`/articles/${article._id}/edit`}
-                      className="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-1 group-hover:text-gold-700 dark:group-hover:text-gold-300 transition-colors"
-                    >
-                      {article.title}
-                    </Link>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {(article.views?.total || 0).toLocaleString('ar')} مشاهدة
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <div className="h-[220px] flex items-center justify-center text-gray-400 text-sm">
-              لا توجد بيانات بعد
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Readership for any period — replaces the fixed 30-day chart and the all-time top list */}
+      <VisitorStats formatNumber={formatNumber} />
 
       {/* Quick links */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">

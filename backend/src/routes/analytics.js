@@ -5,6 +5,7 @@ const { body, query } = require('express-validator');
 const router = express.Router();
 
 const { trackEvent, getDashboardStats, getTrending, getViewsOverTime } = require('../services/analyticsService');
+const { PRESETS, getRange } = require('../services/statsService');
 const Article = require('../models/Article');
 const PageView = require('../models/PageView');
 const Category = require('../models/Category');
@@ -36,7 +37,13 @@ router.post('/event', publicLimiter, optionalAuth, validate([
   body('articleId').optional().isMongoId().withMessage('معرف المقال غير صالح'),
 ]), async (req, res, next) => {
   try {
-    const { type, articleId, sessionId, source, metadata } = req.body;
+    const { type, articleId, source, metadata } = req.body;
+    // The reader's anonymous visitor id (see ViewTracker on the site). One that
+    // is not the shape we issue is dropped, not refused: a view is never lost
+    // over its visitor id, and the log cannot be stuffed with arbitrary strings.
+    const sessionId = typeof req.body.sessionId === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(req.body.sessionId)
+      ? req.body.sessionId
+      : undefined;
     const userId = req.user?._id;
     res.status(202).json({ success: true, message: 'تم التسجيل' });
 
@@ -120,6 +127,20 @@ router.get('/views', verifyToken, requirePermission('analytics.view'), validate(
     const periodMap = { '7d': 7, '30d': 30, '90d': 90 };
     const days = periodMap[req.query.period] || 30;
     const data = await getViewsOverTime(days);
+    return success(res, data);
+  } catch (err) { next(err); }
+});
+
+// GET /analytics/range?preset=30d  or  ?from=YYYY-MM-DD&to=YYYY-MM-DD — admin
+// Readership for any period, from the permanent daily record plus today live.
+router.get('/range', verifyToken, requirePermission('analytics.view'), validate([
+  query('preset').optional().isIn(PRESETS),
+  query('from').optional().isISO8601({ strict: true }).isLength({ min: 10, max: 10 }),
+  query('to').optional().isISO8601({ strict: true }).isLength({ min: 10, max: 10 }),
+]), async (req, res, next) => {
+  try {
+    const { preset, from, to } = req.query;
+    const data = await getRange({ preset: preset || (from || to ? undefined : '30d'), from, to });
     return success(res, data);
   } catch (err) { next(err); }
 });
