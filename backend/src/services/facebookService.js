@@ -56,16 +56,23 @@ const articleUrl = (article) => {
  * card is already wrong (see scripts/refresh-facebook-previews.js).
  *
  * Best effort on purpose: if this fails the post still goes out.
+ *
+ * Any token Graph accepts will do for a scrape, not only the Page's: the
+ * repair script also takes an app token or one from the Graph API Explorer.
+ * The thrown error carries Graph's code so a caller can tell a rate limit
+ * from a real failure.
  */
-const rescrape = async (link) => {
+const rescrape = async (link, token = config.facebook.pageAccessToken) => {
   const res = await fetch(`${API_BASE}/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: link, scrape: true, access_token: config.facebook.pageAccessToken }),
+    body: JSON.stringify({ id: link, scrape: true, access_token: token }),
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || body.error) {
-    throw new Error(body.error?.message || `Graph API returned ${res.status}`);
+    const err = new Error(body.error?.message || `Graph API returned ${res.status}`);
+    err.code = body.error?.code;
+    throw err;
   }
   return body;
 };
