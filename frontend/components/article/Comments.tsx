@@ -5,6 +5,7 @@ import { MessageSquare, Send, Loader2, CheckCircle2, AlertCircle, CornerUpRight,
 import { API_URL } from '@/lib/api';
 import type { Comment } from '@/lib/types';
 import { getRelativeTime } from '@/lib/utils/dateUtils';
+import { avatarSrc } from '@/lib/utils/avatar';
 
 interface CommentsProps {
   articleId: string;
@@ -29,8 +30,8 @@ const countAll = (list: Comment[]) =>
 
 function Avatar({ comment }: { comment: Comment }) {
   const name = displayName(comment);
-  const avatar = comment.author?.avatar;
-  const url = typeof avatar === 'string' ? avatar : avatar?.url;
+  // The 40px circle gets a square rendition, not the full-size original.
+  const url = avatarSrc(comment.author?.avatar, 40);
   return url ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img

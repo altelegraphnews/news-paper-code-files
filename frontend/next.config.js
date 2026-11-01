@@ -2,12 +2,18 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    // Serve images straight from Cloudinary's CDN (f_auto,q_auto,w_) instead of
-    // the Next optimizer, which was dropping concurrent lazy thumbnail requests
-    // on the Railway container. See lib/cloudinaryLoader.js.
+    // Serve the renditions stored on R2 instead of running the Next
+    // optimizer, which was dropping concurrent lazy thumbnail requests on the
+    // Railway container. See lib/mediaLoader.js.
     loader: 'custom',
-    loaderFile: './lib/cloudinaryLoader.js',
+    loaderFile: './lib/mediaLoader.js',
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'media.al-telegraph.com',
+        port: '',
+        pathname: '/**',
+      },
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
@@ -34,15 +40,16 @@ const nextConfig = {
       },
     ],
     // Inert with loader: 'custom' — Next only reads this for its own optimizer.
-    // The delivered format is decided in lib/cloudinaryLoader.js.
+    // Renditions are WebP, decided once at upload (backend mediaVariants.js).
     formats: ['image/avif', 'image/webp'],
-    // Every width listed here is a file Cloudinary generates, stores and bills
-    // for, per image and per format. The defaults are 16 widths; at ~1,160
-    // images that was 20,624 stored assets against 1,160 real photographs.
+    // Every width listed here must exist as a stored rendition of every
+    // picture on R2 (backend/src/services/mediaVariants.js), because R2 cannot
+    // resize on request: add a width there, and backfill it, before adding it
+    // here, or every image at that width will 404.
     //
     // These are the widths the layouts actually ask for. Nothing on the site
     // renders wider than 960 CSS px (the hero is 896), so 1920 covers every
-    // case at 2x DPR and 2048/3840 only ever produced files no one displayed.
+    // case at 2x DPR.
     deviceSizes: [640, 828, 1200, 1920],
     // Avatars: 36/64/72/96/128 CSS px, so these cover them at 1x and 2x.
     imageSizes: [64, 128, 256, 384],

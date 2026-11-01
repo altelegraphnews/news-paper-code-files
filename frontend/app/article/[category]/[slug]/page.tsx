@@ -23,7 +23,7 @@ import {
   absoluteUrl,
   metaDescription,
   ogImageSrc,
-  isCloudinary,
+  hasOgRendition,
   OG_IMAGE_WIDTH,
   OG_IMAGE_HEIGHT,
   OG_IMAGE_TYPE,
@@ -81,10 +81,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Serve the crop and the format we advertise — see ogImageSrc.
   const image = ogImageSrc(article.ogImage?.url);
   const imageAlt = singleLine(article.ogImage?.alt || article.title);
-  // True only for images we transform ourselves. Those we can describe down to
-  // the byte; a foreign URL is passed through and described no further, since a
-  // dimension or a MIME type we guessed wrong is worse than one we omitted.
-  const ours = isCloudinary(article.ogImage?.url);
+  // True only for our own pictures, whose share card is a stored 1200×630
+  // JPEG we can describe down to the byte; a foreign URL is passed through and
+  // described no further, since a dimension or a MIME type we guessed wrong is
+  // worse than one we omitted.
+  const ours = hasOgRendition(article.ogImage?.url);
 
   return {
     title,

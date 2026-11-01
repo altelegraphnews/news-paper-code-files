@@ -132,7 +132,7 @@ export default function PrivacyPage() {
         </p>
         <ul>
           <li>Railway وCloudflare — الاستضافة وتوصيل الصفحات</li>
-          <li>Cloudinary — استضافة الصور</li>
+          <li>Cloudflare — استضافة الصور</li>
           <li>Google Fonts — الخطوط العربية المستخدمة في العرض</li>
           <li>خدمة بريد لاستقبال الأعمال المرسلة إلى العنوان أعلاه</li>
         </ul>

@@ -14,7 +14,7 @@ const { generateUniqueSlug } = require('../utils/slugGenerator');
 const { calculateReadingTime, sanitizeExcerpt } = require('../utils/readingTime');
 const { sanitizeHtml } = require('../utils/sanitizer');
 const { PLACEHOLDER_EMAIL } = require('../utils/byline');
-const { uploadBuffer } = require('./cloudinaryService');
+const { uploadBuffer } = require('./mediaStorage');
 const config = require('../config/env');
 const logger = require('../utils/logger');
 
@@ -49,12 +49,14 @@ const textToHtml = (text) => {
     .join('\n');
 };
 
-// Convert a .docx buffer to HTML, uploading embedded images to Cloudinary
+// Convert a .docx buffer to HTML, storing embedded images with the media
+// service. Word's EMF/WMF drawings cannot be decoded and are dropped with a
+// warning, as a failed upload always was.
 const docxToHtml = async (buffer) => {
   const convertImage = mammoth.images.imgElement(async (image) => {
     try {
       const imgBuf = await image.read();
-      const uploaded = await uploadBuffer(imgBuf, { folder: 'alwid/submissions' });
+      const uploaded = await uploadBuffer(imgBuf, { folder: 'alwid/submissions', mimetype: image.contentType });
       return { src: uploaded.secure_url || uploaded.url, alt: '' };
     } catch (err) {
       logger.warn('docx image upload failed:', err.message);
@@ -111,12 +113,12 @@ const ingestSubmission = async (p) => {
   const attachments = p.attachments || [];
   const systemUser = await getSystemUser();
 
-  // 1) Upload image attachments → Cloudinary (for cover + inline cid resolution)
+  // 1) Store image attachments (for cover + inline cid resolution)
   const uploadedImages = [];
   for (const att of attachments.filter(isImage)) {
     if (!att.buffer) continue;
     try {
-      const up = await uploadBuffer(att.buffer, { folder: 'alwid/submissions' });
+      const up = await uploadBuffer(att.buffer, { folder: 'alwid/submissions', mimetype: att.contentType });
       uploadedImages.push({ url: up.secure_url || up.url, publicId: up.public_id, contentId: att.contentId });
     } catch (err) {
       logger.warn('submission image upload failed:', err.message);

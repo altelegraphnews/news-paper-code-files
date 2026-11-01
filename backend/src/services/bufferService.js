@@ -9,6 +9,7 @@ require('../models/User');
 const config = require('../config/env');
 const logger = require('../utils/logger');
 const { bylineLine, AUTHOR_FIELDS } = require('../utils/byline');
+const { variantUrl } = require('./mediaVariants');
 // The Page post reads the same whichever route sends it.
 const { articleUrl, buildMessage: pageMessage, plain } = require('./facebookService');
 
@@ -90,19 +91,13 @@ const connectedChannels = async () => {
 };
 
 /**
- * The 1200×630 JPEG the article page already serves crawlers as og:image,
- * built exactly as ogImageSrc builds it in the frontend's seoUtils. Matching
- * it to the character means Cloudinary hands back the file it already made
- * rather than producing and billing a second one. 1200:630 is 1.905:1, inside
- * the 4:5 to 1.91:1 range Instagram accepts.
+ * The 1200×630 JPEG the article page already serves crawlers as og:image:
+ * the `og` rendition stored beside every picture on R2 (mediaVariants), the
+ * same file ogImageSrc points at in the frontend's seoUtils. 1200:630 is
+ * 1.905:1, inside the 4:5 to 1.91:1 range Instagram accepts. Covers still
+ * written as Cloudinary URLs map to the same rendition.
  */
-const shareImage = (url) => {
-  if (!url) return null;
-  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
-  return url
-    .replace('/upload/', '/upload/f_jpg,q_auto,c_fill,g_auto,w_1200,h_630/')
-    .replace(/\.(png|webp|avif|gif|jpeg|tiff?|bmp|heic)$/i, '.jpg');
-};
+const shareImage = (url) => (url ? variantUrl(url, 'og') : null);
 
 /** The link as a person reads it: Arabic, not a wall of %D8%. */
 const readable = (link) => {

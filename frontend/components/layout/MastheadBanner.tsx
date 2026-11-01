@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { variantUrl } from '@/lib/media';
 
 /**
  * Newspaper masthead — sits between the fixed news ticker and the navbar.
@@ -6,9 +7,10 @@ import Link from 'next/link';
  * ticker). Presented on a fixed parchment band in both light and dark themes
  * so it reads like a printed nameplate rather than a bright block in the dark.
  *
- * Uses a plain <img> on purpose: next/image is wired to a Cloudinary loader
- * for remote assets (see next.config.js), so local /public images go through
- * a bare tag — same as the navbar logo.
+ * Uses a plain <img> on purpose: next/image is wired to the R2 rendition
+ * loader for remote assets (see next.config.js), so local /public images go
+ * through a bare tag — same as the navbar logo. An uploaded banner is served
+ * as its 1920px rendition rather than the full original.
  */
 export default function MastheadBanner({ imageUrl, enabled = true }: { imageUrl?: string; enabled?: boolean }) {
   if (!enabled) return null;
@@ -23,7 +25,7 @@ export default function MastheadBanner({ imageUrl, enabled = true }: { imageUrl?
         className="block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset"
       >
         <img
-          src={imageUrl || '/masthead.jpg'}
+          src={imageUrl ? variantUrl(imageUrl, 'w1920') : '/masthead.jpg'}
           alt="التلغراف — مجلة أدبية وثقافية"
           width={1200}
           height={200}

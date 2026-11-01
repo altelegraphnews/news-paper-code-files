@@ -52,7 +52,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc: ["'self'", 'data:', 'https://res.cloudinary.com', 'https://*.cloudinary.com'],
+      imgSrc: ["'self'", 'data:', config.r2.publicUrl, 'https://res.cloudinary.com', 'https://*.cloudinary.com'],
       connectSrc: ["'self'"],
     },
   },

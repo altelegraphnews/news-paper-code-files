@@ -55,6 +55,17 @@ const config = {
     uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || 'alwid_articles',
   },
 
+  // Cloudflare R2 holds every picture since the Cloudinary account died on
+  // 2026-10-31 (services/mediaStorage.js). Optional, like Cloudinary was, so
+  // local dev boots without it; uploads answer 503 until it is set.
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID || '',
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    bucket: process.env.R2_BUCKET || '',
+    publicUrl: (process.env.R2_PUBLIC_URL || 'https://media.al-telegraph.com').replace(/\/+$/, ''),
+  },
+
   email: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT, 10) || 587,

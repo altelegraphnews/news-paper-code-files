@@ -1,4 +1,5 @@
 import type { Article, Author, Category } from '../types';
+import { isOwnMedia, originalUrl, variantUrl } from '../media';
 
 /**
  * One place for everything search engines read about the site.
@@ -108,28 +109,26 @@ export function getTagUrl(tag: string): string {
 }
 
 /**
- * Social preview image, cropped to the 1.91:1 card Facebook, X and LinkedIn
- * expect.
+ * Social preview image: the 1.91:1 card Facebook, X and LinkedIn expect.
  *
  * Everything about this URL is pinned, because a share card is fetched by a
  * crawler we cannot negotiate with:
  *
  *  - The dimensions we advertise have to be the dimensions we actually serve.
  *    Article covers are whatever size they were uploaded — one live example is
- *    549×364 — so declaring a flat 1200×630 told Facebook to wait for an image
- *    that never arrived, and its share dialog sat spinning. Cloudinary crops to
- *    the real thing; non-Cloudinary sources return unchanged and the caller then
- *    declares no dimensions rather than guessing.
+ *    549×364 — so declaring a flat 1200×630 for the cover itself told Facebook
+ *    to wait for an image that never arrived, and its share dialog sat
+ *    spinning. Every picture of ours has an `og` rendition cut to exactly
+ *    1200×630 at upload (an upright picture shown whole on a blurred backdrop
+ *    rather than beheaded); anything else is returned unchanged and the caller
+ *    then declares no dimensions rather than guessing.
  *
- *  - The FORMAT has to be pinned too, and `f_auto` is the opposite of that.
- *    With f_auto, Cloudinary picks the format from the caller's `Accept`
- *    header: the same URL answers `image/jpeg` to a plain request and
- *    `image/webp` to anything that lists webp — under a path still ending in
- *    `.png`. Facebook reserves the card from og:image:width/height, then drops
- *    an attachment whose bytes do not match the URL it was promised, which is
- *    the blank 1200×630 box that showed up on most shared articles. So: f_jpg,
- *    and the delivered extension rewritten to match, giving every crawler the
- *    same JPEG no matter what it asks for.
+ *  - The FORMAT has to be pinned too. Facebook reserves the card from
+ *    og:image:width/height, then drops an attachment whose bytes do not match
+ *    the URL it was promised — the blank 1200×630 box that once showed up on
+ *    most shared articles, when the format was negotiated per request. The
+ *    `og` rendition is a stored JPEG at a .jpg URL: every crawler gets the
+ *    same bytes, whatever it asks for.
  */
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
@@ -138,20 +137,12 @@ export const OG_IMAGE_TYPE = 'image/jpeg';
 
 export function ogImageSrc(url?: string | null): string | undefined {
   if (!url) return undefined;
-  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
-  return url
-    .replace(
-      '/upload/',
-      `/upload/f_jpg,q_auto,c_fill,g_auto,w_${OG_IMAGE_WIDTH},h_${OG_IMAGE_HEIGHT}/`
-    )
-    // Cloudinary converts on the extension as well as on f_, and a crawler that
-    // trusts the extension must not be told `.png` about a JPEG.
-    .replace(/\.(png|webp|avif|gif|jpeg|tiff?|bmp|heic)$/i, '.jpg');
+  return variantUrl(url, 'og');
 }
 
-/** True only when we control the crop and therefore know the size. */
-export function isCloudinary(url?: string | null): boolean {
-  return Boolean(url && url.includes('res.cloudinary.com') && url.includes('/upload/'));
+/** True only when the picture is ours, so its share card is the 1200×630 rendition. */
+export function hasOgRendition(url?: string | null): boolean {
+  return isOwnMedia(url);
 }
 
 /**
@@ -270,7 +261,8 @@ export function buildArticleSchema(article: Article, url: string) {
     '@type': 'Article',
     headline: metaDescription(article.title, 110),
     description: metaDescription(article.seo?.description || article.excerpt, 300),
-    image: article.ogImage?.url ? [article.ogImage.url] : undefined,
+    // The original file, not a rendition: Google wants the largest image.
+    image: article.ogImage?.url ? [originalUrl(article.ogImage.url)] : undefined,
     datePublished: article.publishedAt,
     dateModified: article.updatedAt || article.publishedAt,
     author: article.author?.name
@@ -303,7 +295,10 @@ export function buildPersonSchema(author: AuthorLike) {
     '@type': 'Person',
     name: author.name,
     url: getAuthorUrl(author),
-    image: typeof author.avatar === 'string' ? author.avatar : author.avatar?.url,
+    image: (() => {
+      const url = typeof author.avatar === 'string' ? author.avatar : author.avatar?.url;
+      return url ? originalUrl(url) : undefined;
+    })(),
     description: metaDescription(author.bio, 300) || undefined,
     jobTitle: author.jobTitle || undefined,
     worksFor: { '@id': `${SITE_URL}/#organization` },

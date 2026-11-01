@@ -1,6 +1,8 @@
 // Author avatars come from the API as { url, publicId } (the User.avatar
 // subdocument), but older code/types treated avatar as a plain string URL.
 // This normalizes either shape to a usable image URL string.
+import { squareVariant, variantUrl } from '@/lib/media';
+
 export type AvatarLike = string | { url?: string; publicId?: string } | null | undefined;
 
 export function avatarUrl(avatar: AvatarLike): string | undefined {
@@ -10,39 +12,33 @@ export function avatarUrl(avatar: AvatarLike): string | undefined {
 }
 
 /**
- * Cloudinary URL for a circular portrait, cropped square around the face.
+ * A circular portrait: the square rendition cut at upload.
  *
- * The site-wide image loader asks for `c_limit,w_<width>`, which keeps the
- * original aspect ratio. Author photos are whatever shape they were uploaded in
- * — plenty are landscape — so a 96px-wide request comes back 96×54, and CSS
- * `object-cover` then stretches those 54 rows to fill a 96px-tall circle. That
- * upscale is why the byline portrait looked soft: a 596×335 original was being
- * delivered as 96×54 for a 48px circle that needs 96×96 on a retina screen.
+ * The site-wide image loader keeps a picture's aspect ratio. Author photos
+ * are whatever shape they were uploaded in — plenty are landscape — so a
+ * width-only request for a 96px circle comes back 96×54, and CSS
+ * `object-cover` then stretches those 54 rows to fill the circle. That
+ * upscale is why the byline portrait once looked soft.
  *
- * A square crop puts the full size×size into the circle with nothing to
- * upscale, and `g_face` centres it on the face instead of trusting a centre
- * crop of a full-body shot. Cloudinary falls back to a centre crop when it
- * finds no face, so logos and illustrations still work.
- *
- * `size` is the CSS size of the circle; the request is doubled for retina.
- * Render with `unoptimized` so the global loader does not chain a second
- * transform on top — `c_limit` running first would squash the image back down
- * and reintroduce exactly the blur this avoids.
+ * So every picture is also stored as squares (sq72…sq256), cropped to keep
+ * the head in an upright photo and the most detailed region otherwise
+ * (backend mediaVariants.js); this picks the smallest one that fills the
+ * circle on a retina screen. `size` is the CSS size of the circle. Render
+ * with `unoptimized`, so the global loader does not swap the square back for
+ * a width rendition.
  */
 export function avatarSrc(avatar: AvatarLike, size: number): string | undefined {
   const url = avatarUrl(avatar);
   if (!url) return undefined;
-  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
-  const px = Math.round(size * 2);
-  return url.replace('/upload/', `/upload/f_webp,q_auto,c_fill,g_face,w_${px},h_${px}/`);
+  return variantUrl(url, squareVariant(Math.round(size * 2)));
 }
 
 /**
- * Like avatarSrc but for a rectangular portrait frame (the article byline
- * plate). The face crop is computed for the actual 3:4 shape so g_face frames
- * it correctly — a square crop re-cropped by CSS centres the face on the
- * square, not the tall frame, and can push it off. `width` is the CSS width;
- * the request is doubled for retina and the height derived from the ratio.
+ * Like avatarSrc but for the 3:4 byline plate: the pt192x256 rendition, cut
+ * for that shape at upload, so the head is framed for the tall frame rather
+ * than for a square that CSS crops again. It suits plates up to 96 CSS px
+ * wide; `width` and `ratio` say what the caller draws, and a different shape
+ * would need its own rendition in mediaVariants.js first.
  */
 export function avatarPortraitSrc(
   avatar: AvatarLike,
@@ -51,8 +47,9 @@ export function avatarPortraitSrc(
 ): string | undefined {
   const url = avatarUrl(avatar);
   if (!url) return undefined;
-  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
-  const w = Math.round(width * 2);
-  const h = Math.round(w * ratio);
-  return url.replace('/upload/', `/upload/f_webp,q_auto,c_fill,g_face,w_${w},h_${h}/`);
+  if (width > 96 || Math.abs(ratio - 4 / 3) > 0.01) {
+    // eslint-disable-next-line no-console
+    console.warn(`avatarPortraitSrc: no rendition for ${width}px at ${ratio}; serving pt192x256`);
+  }
+  return variantUrl(url, 'pt192x256');
 }
