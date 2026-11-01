@@ -7,26 +7,18 @@ const DailyStat = require('../models/DailyStat');
 require('../models/Category');
 const logger = require('../utils/logger');
 
-/**
- * Days are the newsroom's days. Iraq has kept UTC+3 all year since it dropped
- * daylight saving in 2008, so the zone name (for Mongo's grouping) and the
- * fixed offset (for turning a day into an instant) always agree.
- */
-const TZ = 'Asia/Baghdad';
-const OFFSET = '+03:00';
-
-const dayFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: TZ });
-const dayOf = (instant) => dayFormatter.format(instant); // YYYY-MM-DD
-const today = () => dayOf(new Date());
-const dayStart = (day) => new Date(`${day}T00:00:00${OFFSET}`);
-const addDays = (day, n) => {
-  const d = new Date(`${day}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-};
+// Days are the newsroom's days, starting at midnight in Baghdad (utils/newsroomDay).
+const { dayOf, today, dayStart, addDays, dayExpr } = require('../utils/newsroomDay');
 
 const VIEW = { eventType: 'article_view', article: { $ne: null } };
-const DAY_EXPR = { $dateToString: { format: '%Y-%m-%d', date: '$timestamp', timezone: TZ } };
+const DAY_EXPR = dayExpr('$timestamp');
+
+/**
+ * Article views from the start of a Baghdad day until now, straight from the
+ * event log — the same events the daily record is built from, so a count here
+ * agrees with getRange over the same days. The log keeps 90 days.
+ */
+const viewsSince = (day) => AnalyticsEvent.countDocuments({ ...VIEW, timestamp: { $gte: dayStart(day) } });
 
 /**
  * Views per day per article, and distinct visitors per day, for [start, end).
@@ -231,4 +223,4 @@ const getRange = async (params) => {
   };
 };
 
-module.exports = { PRESETS, rollUp, ensureRolledUp, startDailyRollup, resolveRange, getRange, dayOf, addDays };
+module.exports = { PRESETS, rollUp, ensureRolledUp, startDailyRollup, resolveRange, getRange, viewsSince, dayOf, addDays };

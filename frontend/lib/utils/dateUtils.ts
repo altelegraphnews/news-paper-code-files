@@ -3,6 +3,14 @@ import { ar } from 'date-fns/locale';
 
 type ArabicLocale = 'ar-IQ' | 'ar-SA' | 'ar-EG' | 'ar';
 
+/**
+ * Dates are shown in Baghdad time. Pages render on a server whose clock runs
+ * on UTC, so without a zone a story updated at 1 a.m. in Baghdad was dated
+ * the day before, at 10 p.m. Naming the zone also gives the server and the
+ * reader's browser the same text, whatever zone the reader is in.
+ */
+const TIME_ZONE = 'Asia/Baghdad';
+
 function parseDate(date: string | Date): Date {
   if (date instanceof Date) return date;
   const parsed = parseISO(date);
@@ -26,6 +34,7 @@ export function formatArabicDate(
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: TIME_ZONE,
     }).format(d);
   } catch {
     return '';
@@ -48,6 +57,7 @@ export function formatArabicDateTime(
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: TIME_ZONE,
     }).format(d);
   } catch {
     return '';
@@ -152,6 +162,7 @@ export function formatHijriDate(date: string | Date): string {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: TIME_ZONE,
     }).format(d);
   } catch {
     return '';

@@ -171,7 +171,7 @@ const ingestSubmission = async (p) => {
   }
   if (!title) {
     const firstLine = (p.text || '').split('\n').map((l) => l.trim()).find(Boolean);
-    title = firstLine ? firstLine.slice(0, 120) : `مساهمة بريدية — ${new Date().toLocaleDateString('ar')}`;
+    title = firstLine ? firstLine.slice(0, 120) : `مساهمة بريدية — ${new Date().toLocaleDateString('ar', { timeZone: 'Asia/Baghdad' })}`;
   }
   const slug = await generateUniqueSlug(title, async (s) => {
     return !!(await Article.findOne({ $or: [{ slug: s }, { slugHistory: s }] }));

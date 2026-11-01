@@ -5,6 +5,8 @@ const PageView = require('../models/PageView');
 const Article = require('../models/Article');
 const { getRedisClient } = require('../config/redis');
 const logger = require('../utils/logger');
+const { today, addDays } = require('../utils/newsroomDay');
+const { viewsSince, getRange } = require('./statsService');
 
 /**
  * Track an analytics event (fire-and-forget).
@@ -62,10 +64,10 @@ const recordPageView = async (articleId) => {
  */
 const getDashboardStats = async () => {
   try {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    // Baghdad days, counted exactly as the readership panel counts its
+    // today / 7d / 30d presets — the card used to start its day at midnight
+    // UTC (3 a.m. in Baghdad) and disagree with the panel beside it.
+    const now = today();
 
     const [
       totalArticles,
@@ -77,18 +79,18 @@ const getDashboardStats = async () => {
     ] = await Promise.all([
       Article.countDocuments({ isDeleted: { $ne: true } }),
       Article.countDocuments({ status: 'published', isDeleted: { $ne: true } }),
-      PageView.aggregate([{ $match: { date: today.toISOString().split('T')[0] } }, { $group: { _id: null, total: { $sum: 1 } } }]),
-      PageView.aggregate([{ $match: { date: { $gte: weekAgo.toISOString().split('T')[0] } } }, { $group: { _id: null, total: { $sum: 1 } } }]),
-      PageView.aggregate([{ $match: { date: { $gte: monthAgo.toISOString().split('T')[0] } } }, { $group: { _id: null, total: { $sum: 1 } } }]),
+      viewsSince(now),
+      viewsSince(addDays(now, -6)),
+      viewsSince(addDays(now, -29)),
       require('../models/Comment').countDocuments({ status: 'pending', isDeleted: false }),
     ]);
 
     return {
       articles: { total: totalArticles, published: publishedArticles },
       views: {
-        today: viewsToday[0]?.total || 0,
-        week: viewsWeek[0]?.total || 0,
-        month: viewsMonth[0]?.total || 0,
+        today: viewsToday,
+        week: viewsWeek,
+        month: viewsMonth,
       },
       comments: { pending: pendingComments },
     };
@@ -135,17 +137,12 @@ const getTrending = async (limit = 10) => {
  */
 const getViewsOverTime = async (days = 30) => {
   try {
-    const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - days);
-    const fromStr = fromDate.toISOString().split('T')[0];
-
-    const data = await PageView.aggregate([
-      { $match: { date: { $gte: fromStr } } },
-      { $group: { _id: '$date', total: { $sum: 1 } } },
-      { $sort: { _id: 1 } },
-    ]);
-
-    return data.map((d) => ({ date: d._id, views: d.total }));
+    // The last `days` Baghdad days, today included, from the permanent daily
+    // record plus today live — the same series the readership panel draws,
+    // and one that reaches past the 30 days the raw page-view log keeps.
+    const now = today();
+    const { series } = await getRange({ from: addDays(now, -(days - 1)), to: now });
+    return series.map(({ date, views }) => ({ date, views }));
   } catch (err) {
     logger.error('Get views over time error:', err.message);
     return [];

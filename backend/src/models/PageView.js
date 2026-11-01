@@ -1,6 +1,7 @@
 'use strict';
 
 const mongoose = require('mongoose');
+const { dayOf, hourOf } = require('../utils/newsroomDay');
 
 const pageViewSchema = new mongoose.Schema(
   {
@@ -66,11 +67,13 @@ pageViewSchema.index({ date: 1, article: 1 });
 pageViewSchema.index({ sessionId: 1 });
 pageViewSchema.index({ path: 1, timestamp: -1 });
 
-// Pre-save: extract date and hour
+// Pre-save: stamp the Baghdad day and hour. A server's clock runs on UTC, so
+// toISOString / getHours put a view read at 1 a.m. in Baghdad on the day
+// before — the newsroom's day starts at midnight in Baghdad (utils/newsroomDay).
 pageViewSchema.pre('save', function (next) {
   const ts = this.timestamp || new Date();
-  this.date = ts.toISOString().split('T')[0];
-  this.hour = ts.getHours();
+  this.date = dayOf(ts);
+  this.hour = hourOf(ts);
   next();
 });
 

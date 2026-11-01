@@ -17,6 +17,27 @@ export function formatDateTime(dateStr: string | Date): string {
   return formatDate(dateStr, 'dd MMMM yyyy، HH:mm')
 }
 
+/*
+ * A datetime-local input holds a wall-clock time with no zone. The newsroom
+ * works in Baghdad time (UTC+3 all year), so that is what the publish-time
+ * picker means, whatever zone the editor's browser is set to. Sent as typed,
+ * the server — whose clock runs on UTC — read 15:00 as 15:00 UTC and the
+ * article went out at 18:00 in Baghdad; shown back as the stored UTC string,
+ * it read 12:00.
+ */
+const BAGHDAD_MS = 3 * 60 * 60 * 1000
+
+/** An instant → 'YYYY-MM-DDTHH:mm' in Baghdad time, for a datetime-local input. */
+export function toBaghdadInput(value: string | Date): string {
+  const d = typeof value === 'string' ? new Date(value) : value
+  return isNaN(d.getTime()) ? '' : new Date(d.getTime() + BAGHDAD_MS).toISOString().slice(0, 16)
+}
+
+/** 'YYYY-MM-DDTHH:mm' typed in Baghdad time → the ISO instant to send to the server. */
+export function fromBaghdadInput(value: string): string {
+  return new Date(`${value}:00+03:00`).toISOString()
+}
+
 /** Relative time (e.g. "منذ 3 ساعات") */
 export function timeAgo(dateStr: string | Date): string {
   try {

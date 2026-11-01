@@ -33,7 +33,11 @@ const GRID_COLS: Record<number, string> = {
 };
 const gridColsFor = (count: number) => GRID_COLS[Math.min(count, 4)] || 'lg:grid-cols-4';
 
-/** Classic newspaper dateline above the masthead fold (refreshes with ISR) */
+/**
+ * Classic newspaper dateline above the masthead fold (refreshes with ISR).
+ * Baghdad's date: the server's clock runs on UTC, and without the zone the
+ * paper still showed yesterday's date until 3 a.m.
+ */
 function Dateline() {
   const now = new Date();
   const gregorian = new Intl.DateTimeFormat('ar-IQ-u-nu-arab', {
@@ -41,6 +45,7 @@ function Dateline() {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: 'Asia/Baghdad',
   }).format(now);
   let hijri = '';
   try {
@@ -48,6 +53,7 @@ function Dateline() {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
+      timeZone: 'Asia/Baghdad',
     }).format(now);
   } catch {
     // Hijri calendar unavailable in this ICU build — show Gregorian only

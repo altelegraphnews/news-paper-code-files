@@ -41,7 +41,7 @@ export default function AuthorCard({ author, publishedAt, readingTimeMin, classN
         <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
           {publishedAt && (
             <time dateTime={publishedAt}>
-              {new Intl.DateTimeFormat('ar-IQ', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(publishedAt))}
+              {new Intl.DateTimeFormat('ar-IQ', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Baghdad' }).format(new Date(publishedAt))}
             </time>
           )}
           {readingTimeMin && readingTimeMin > 0 && (

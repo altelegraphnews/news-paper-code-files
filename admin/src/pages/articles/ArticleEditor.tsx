@@ -13,7 +13,7 @@ import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { Modal } from '../../components/ui/Modal'
 import { useAuthStore } from '../../store/authStore'
-import { formatDate } from '../../utils/dateUtils'
+import { formatDate, toBaghdadInput, fromBaghdadInput } from '../../utils/dateUtils'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
 import {
@@ -222,7 +222,7 @@ export default function ArticleEditor() {
           authorId: a.author?._id || a.author || '',
           tags: a.tags || [],
           status: a.status || 'draft',
-          scheduledAt: a.publishAt ? a.publishAt.slice(0, 16) : '',
+          scheduledAt: a.publishAt ? toBaghdadInput(a.publishAt) : '',
           isBreaking: a.isBreaking || false,
           isFeatured: a.isFeatured || false,
           isSponsored: a.isSponsored || false,
@@ -239,7 +239,7 @@ export default function ArticleEditor() {
             focusKeyword: a.seo?.keywords?.[0] || '',
             canonicalUrl: a.seo?.canonical || '',
           },
-          expiresAt: a.expireAt ? a.expireAt.slice(0, 16) : '',
+          expiresAt: a.expireAt ? toBaghdadInput(a.expireAt) : '',
           reviewNote: a.review?.note || '',
         })
         setSubmission(a.submission || null)
@@ -325,8 +325,8 @@ export default function ArticleEditor() {
       keywords: form.seo.focusKeyword ? [form.seo.focusKeyword] : [],
       canonical: form.seo.canonicalUrl || undefined,
     },
-    publishAt: form.scheduledAt || undefined,
-    expireAt: form.expiresAt || undefined,
+    publishAt: form.scheduledAt ? fromBaghdadInput(form.scheduledAt) : undefined,
+    expireAt: form.expiresAt ? fromBaghdadInput(form.expiresAt) : undefined,
     author: (canAssignAuthor && form.authorId) ? form.authorId : undefined,
     ...overrides,
   })
@@ -441,7 +441,7 @@ export default function ArticleEditor() {
     if (!scheduleDate) { toast.error('يرجى تحديد موعد النشر'); return }
     setSaving(true)
     try {
-      const payload = buildPayload({ status: 'scheduled', publishAt: scheduleDate })
+      const payload = buildPayload({ status: 'scheduled', publishAt: fromBaghdadInput(scheduleDate) })
       if (isNew) {
         const res = await articlesApi.create(payload)
         const newId = res.data?.data?._id || res.data?.data?.id
@@ -1145,7 +1145,7 @@ export default function ArticleEditor() {
               type="datetime-local"
               value={scheduleDate}
               onChange={(e) => setScheduleDate(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
+              min={toBaghdadInput(new Date())}
               className={inputClass}
               dir="ltr"
             />
