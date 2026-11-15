@@ -2,7 +2,9 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { mediaApi, type MediaItem } from '../../api/media'
 import { Button } from '../../components/ui/Button'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import MediaImage from '../../components/ui/MediaImage'
 import { formatBytes, formatDate } from '../../utils/dateUtils'
+import { previewUrl } from '../../utils/mediaUrl'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
 import {
@@ -242,7 +244,7 @@ export default function MediaLibrary() {
                         : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
                     )}
                   >
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <MediaImage src={previewUrl(url, 'sq256')} fallbackSrc={url} loading="lazy" className="w-full h-full object-cover" />
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
                     {/* Select checkbox */}
@@ -295,7 +297,7 @@ export default function MediaLibrary() {
                         onClick={(e) => e.stopPropagation()}
                         className="rounded border-gray-300 text-red-600 focus:ring-red-500 flex-shrink-0"
                       />
-                      <img src={url} alt="" className="w-12 h-9 object-cover rounded flex-shrink-0" />
+                      <MediaImage src={previewUrl(url, 'sq128')} fallbackSrc={url} loading="lazy" compact className="w-12 h-9 object-cover rounded flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
                           {item.filename || id}
@@ -339,9 +341,9 @@ export default function MediaLibrary() {
               </button>
             </div>
             <div className="p-4 space-y-3">
-              <img
-                src={(preview as any).secure_url || preview.url}
-                alt=""
+              <MediaImage
+                src={previewUrl((preview as any).secure_url || preview.url, 'w640')}
+                fallbackSrc={(preview as any).secure_url || preview.url}
                 className="w-full rounded-md object-contain max-h-40 bg-gray-100 dark:bg-gray-800"
               />
               <div className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400">

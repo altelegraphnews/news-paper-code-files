@@ -7,6 +7,8 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { Badge } from '../../components/ui/Badge'
 import { Pagination } from '../../components/ui/Pagination'
 import { timeAgo } from '../../utils/dateUtils'
+import { previewUrl } from '../../utils/mediaUrl'
+import MediaImage from '../../components/ui/MediaImage'
 import { useAuthStore } from '../../store/authStore'
 import toast from 'react-hot-toast'
 import { clsx } from 'clsx'
@@ -210,6 +212,7 @@ export default function UserManager() {
       const asset = res.data?.data
       const url = asset?.secure_url || asset?.url
       if (url) {
+        toast.success('تم رفع الصورة وحفظها')
         setForm((f) => ({ ...f, avatarUrl: url }))
         setMediaAssets((prev) => (asset ? [asset, ...prev] : prev))
         setShowMediaPicker(false)
@@ -580,7 +583,7 @@ export default function UserManager() {
           <div className="flex items-center gap-4">
             <div className="relative group shrink-0">
               {form.avatarUrl ? (
-                <img src={form.avatarUrl} alt={form.name} className="w-20 h-20 rounded-full object-cover ring-2 ring-gold-400/70" />
+                <MediaImage src={previewUrl(form.avatarUrl, 'sq192')} fallbackSrc={form.avatarUrl} alt={form.name} compact className="w-20 h-20 rounded-full object-cover ring-2 ring-gold-400/70" />
               ) : (
                 <div className="w-20 h-20 rounded-full bg-ink-900 flex items-center justify-center text-gold-300 text-2xl font-bold font-heading">
                   {form.name?.charAt(0) || 'ك'}
@@ -771,7 +774,7 @@ export default function UserManager() {
                   onClick={() => { setForm({ ...form, avatarUrl: asset.secure_url || asset.url }); setShowMediaPicker(false) }}
                   className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-gold-500 transition-colors"
                 >
-                  <img src={asset.secure_url || asset.url} alt="" className="w-full h-full object-cover" />
+                  <MediaImage src={previewUrl(asset.secure_url || asset.url, 'sq256')} fallbackSrc={asset.secure_url || asset.url} loading="lazy" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

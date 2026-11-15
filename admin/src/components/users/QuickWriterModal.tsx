@@ -3,6 +3,8 @@ import { usersApi, type UserRecord } from '../../api/users'
 import { mediaApi } from '../../api/media'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
+import MediaImage from '../ui/MediaImage'
+import { previewUrl } from '../../utils/mediaUrl'
 import { generateWriterCredentials } from '../../utils/credentials'
 import toast from 'react-hot-toast'
 import { Camera, Sparkles } from 'lucide-react'
@@ -55,7 +57,10 @@ export default function QuickWriterModal({ isOpen, onClose, writer, onCreated }:
       const res = await mediaApi.upload(fd)
       const asset = res.data?.data
       const url = asset?.secure_url || asset?.url
-      if (url) setAvatarUrl(url)
+      if (url) {
+        setAvatarUrl(url)
+        toast.success('تم رفع الصورة وحفظها')
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'فشل في رفع الصورة')
     } finally {
@@ -114,7 +119,7 @@ export default function QuickWriterModal({ isOpen, onClose, writer, onCreated }:
             title="صورة الكاتب"
           >
             {avatarUrl ? (
-              <img src={avatarUrl} alt={name} className="w-16 h-16 rounded-full object-cover ring-2 ring-gold-400/70" />
+              <MediaImage src={previewUrl(avatarUrl, 'sq192')} fallbackSrc={avatarUrl} alt={name} compact className="w-16 h-16 rounded-full object-cover ring-2 ring-gold-400/70" />
             ) : (
               <div className="w-16 h-16 rounded-full bg-ink-900 flex items-center justify-center text-gold-300 text-xl font-bold font-heading">
                 {name.trim().charAt(0) || 'ك'}

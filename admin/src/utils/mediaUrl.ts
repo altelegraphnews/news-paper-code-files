@@ -53,6 +53,16 @@ export function variantUrl(url: string, name: string): string {
   return `${MEDIA_BASE}/${key.split('/').map(encodeURIComponent).join('/')}`
 }
 
+/**
+ * A small stored size for a preview tile, so a picker of forty pictures
+ * doesn't download forty originals. Videos have no renditions and come back
+ * unchanged; pair this with MediaImage's fallbackSrc for the original.
+ */
+export function previewUrl(url: string, name: string): string {
+  if (/\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)) return url
+  return variantUrl(url, name)
+}
+
 /** What a gallery <img src> points at — wide enough to fill the reading column on a retina screen. */
 export const galleryImageUrl = (url: string) => variantUrl(url, 'w1200')
 

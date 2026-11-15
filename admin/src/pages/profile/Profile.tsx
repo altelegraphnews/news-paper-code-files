@@ -4,6 +4,8 @@ import { mediaApi } from '../../api/media'
 import { useAuthStore } from '../../store/authStore'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
+import MediaImage from '../../components/ui/MediaImage'
+import { previewUrl } from '../../utils/mediaUrl'
 import toast from 'react-hot-toast'
 import {
   UserCircle, Save, KeyRound, Camera, Twitter, Facebook, Linkedin, Globe,
@@ -154,7 +156,7 @@ export default function Profile() {
         <div className="flex items-center gap-5 flex-wrap">
           <div className="relative group">
             {form.avatarUrl ? (
-              <img src={form.avatarUrl} alt={form.name} className="w-24 h-24 rounded-full object-cover ring-2 ring-gold-400/70" />
+              <MediaImage src={previewUrl(form.avatarUrl, 'sq192')} fallbackSrc={form.avatarUrl} alt={form.name} compact className="w-24 h-24 rounded-full object-cover ring-2 ring-gold-400/70" />
             ) : (
               <div className="w-24 h-24 rounded-full bg-ink-900 flex items-center justify-center text-gold-300 text-3xl font-bold font-heading">
                 {form.name?.charAt(0) ?? 'م'}
@@ -266,7 +268,7 @@ export default function Profile() {
                   onClick={() => { setForm({ ...form, avatarUrl: asset.secure_url || asset.url }); setShowMediaPicker(false) }}
                   className="aspect-square rounded-md overflow-hidden border-2 border-transparent hover:border-gold-500 transition-colors"
                 >
-                  <img src={asset.secure_url || asset.url} alt="" className="w-full h-full object-cover" />
+                  <MediaImage src={previewUrl(asset.secure_url || asset.url, 'sq256')} fallbackSrc={asset.secure_url || asset.url} loading="lazy" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

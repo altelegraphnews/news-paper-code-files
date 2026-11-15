@@ -6,7 +6,8 @@ import { mediaApi } from '../../api/media'
 import { usersApi } from '../../api/users'
 import RichEditor, { type RichEditorHandle } from '../../components/editor/RichEditor'
 import type { GalleryImageInput } from '../../components/editor/Gallery'
-import { galleryImageUrl, galleryFullUrl } from '../../utils/mediaUrl'
+import { galleryImageUrl, galleryFullUrl, previewUrl } from '../../utils/mediaUrl'
+import MediaImage from '../../components/ui/MediaImage'
 import { saveErrorMessage } from '../../utils/apiError'
 import QuickWriterModal, { type QuickWriter } from '../../components/users/QuickWriterModal'
 import { Button } from '../../components/ui/Button'
@@ -591,32 +592,41 @@ export default function ArticleEditor() {
     setMediaUploading(true)
     setMediaUploadPct(0)
 
+    // One file failing must not throw away the ones the server already saved.
     const uploaded: any[] = []
-    try {
-      for (let i = 0; i < images.length; i++) {
-        const formData = new FormData()
-        formData.append('file', images[i])
-        formData.append('folder', 'alwid/articles')
+    for (let i = 0; i < images.length; i++) {
+      const formData = new FormData()
+      formData.append('file', images[i])
+      formData.append('folder', 'alwid/articles')
+      try {
         const res = await mediaApi.upload(formData, (pct) =>
           setMediaUploadPct(Math.round(((i + pct / 100) / images.length) * 100))
         )
         const asset = res.data?.data
         if (asset) uploaded.push(asset)
+        else toast.error(`لم يصل رد الخادم عن ${images[i].name}`)
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message || `فشل في رفع ${images[i].name}`)
       }
-      if (!uploaded.length) throw new Error('empty response')
+    }
+    setMediaUploading(false)
+    setMediaUploadPct(0)
+    if (!uploaded.length) return
 
-      setMediaAssets((prev) => [...uploaded, ...prev])
-      setMediaError('')
-      if (mediaTarget === 'gallery') {
-        setMediaSelection((prev) => [...prev, ...uploaded])
-      } else {
-        selectMedia(uploaded[0])
-      }
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'فشل في رفع الصورة')
-    } finally {
-      setMediaUploading(false)
-      setMediaUploadPct(0)
+    // Said in words because the preview may not load even though the picture
+    // is saved: on 2026-11-14 the picture road failed and every upload looked
+    // like it had not happened.
+    toast.success(
+      uploaded.length === 1
+        ? 'تم رفع الصورة وحفظها'
+        : `تم رفع الصور وحفظها (${uploaded.length.toLocaleString('ar-EG')})`
+    )
+    setMediaAssets((prev) => [...uploaded, ...prev])
+    setMediaError('')
+    if (mediaTarget === 'gallery') {
+      setMediaSelection((prev) => [...prev, ...uploaded])
+    } else {
+      selectMedia(uploaded[0])
     }
   }
 
@@ -797,8 +807,9 @@ export default function ArticleEditor() {
           <div className="card overflow-hidden">
             {form.ogImage.url ? (
               <div className="relative">
-                <img
-                  src={form.ogImage.url}
+                <MediaImage
+                  src={previewUrl(form.ogImage.url, 'w828')}
+                  fallbackSrc={form.ogImage.url}
                   alt={form.ogImage.alt}
                   className="w-full h-56 object-cover"
                 />
@@ -1326,9 +1337,11 @@ export default function ArticleEditor() {
                       picked ? 'border-gold-500' : 'border-transparent hover:border-gold-500'
                     )}
                   >
-                    <img
-                      src={asset.secure_url || asset.url}
+                    <MediaImage
+                      src={previewUrl(asset.secure_url || asset.url, 'sq256')}
+                      fallbackSrc={asset.secure_url || asset.url}
                       alt={asset.public_id}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                     {picked && (

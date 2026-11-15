@@ -95,7 +95,10 @@ export default function HomepageSettings() {
     try {
       const res = await mediaApi.upload(fd)
       const url = res.data?.data?.secure_url || res.data?.data?.url
-      if (url) update({ masthead: { ...s.masthead, imageUrl: url } })
+      if (url) {
+        update({ masthead: { ...s.masthead, imageUrl: url } })
+        toast.success('تم رفع الصورة وحفظها')
+      }
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'فشل رفع الصورة')
     } finally { setUploading(false) }
